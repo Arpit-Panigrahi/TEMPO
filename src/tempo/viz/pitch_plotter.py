@@ -1,17 +1,17 @@
 """
-Matplotlib-based football pitch visualizer.
-No external visualization dependencies required (100% standard matplotlib).
+Matplotlib-based tactical pitch visualizer.
+Pure matplotlib, zero external UI dependencies.
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle, Arc
+from matplotlib.patches import Rectangle
 from scipy.spatial import ConvexHull
 from tempo.geometry.pitch import PITCH_LENGTH, PITCH_WIDTH
 
 
 def draw_pitch(ax=None, pitch_color="#1a2421", line_color="#ffffff", line_alpha=0.6):
-    """Draw a clean standard football pitch."""
+    """Draw a standard FIFA football pitch (105m x 68m)."""
     if ax is None:
         fig, ax = plt.subplots(figsize=(12, 8))
     else:
@@ -60,57 +60,26 @@ def draw_pitch(ax=None, pitch_color="#1a2421", line_color="#ffffff", line_alpha=
     return fig, ax
 
 
-def plot_domino_frame(
+def plot_frame(
     ax,
     att_pos: np.ndarray,
     def_pos: np.ndarray,
     ball_pos: np.ndarray,
-    causal_root_idx: int,
-    cascade_indices: list = None,
-    cf_root_pos: np.ndarray = None,
-    title: str = "TEMPO Domino Moment Detection"
+    title: str = "TEMPO Tactical State"
 ):
-    """Plot tactical frame with defensive hull and causal breakdown highlights."""
+    """Plot basic frame with team positions, ball, and defensive hull."""
     draw_pitch(ax)
 
-    # Draw defensive convex hull
     if len(def_pos) >= 3:
         hull = ConvexHull(def_pos)
         hull_pts = def_pos[hull.vertices]
         hull_pts = np.vstack([hull_pts, hull_pts[0]])
-        ax.plot(hull_pts[:, 0], hull_pts[:, 1], color="#ff4d4f", linestyle="--", lw=1.5, alpha=0.7, label="Defensive Block Hull")
+        ax.plot(hull_pts[:, 0], hull_pts[:, 1], color="#ff4d4f", linestyle="--", lw=1.5, alpha=0.7, label="Defensive Block")
         ax.fill(hull_pts[:, 0], hull_pts[:, 1], color="#ff4d4f", alpha=0.12)
 
-    # Attackers (Cyan)
-    ax.scatter(att_pos[:, 0], att_pos[:, 1], c="#00d2d3", edgecolors="#ffffff", s=180, zorder=5, label="Attacking Team")
-    
-    # Defenders (Red/Coral)
-    ax.scatter(def_pos[:, 0], def_pos[:, 1], c="#ff6b6b", edgecolors="#ffffff", s=180, zorder=5, label="Defending Team")
-    
-    # Highlight Causal Root Player (Gold pulsing ring)
-    root = def_pos[causal_root_idx]
-    ax.scatter([root[0]], [root[1]], c="#feca57", edgecolors="#ffffff", s=340, zorder=6, label="Causal Root (Overcommitted)")
-    ax.scatter([root[0]], [root[1]], c="none", edgecolors="#feca57", s=650, lw=2.5, linestyle=":", zorder=6)
+    ax.scatter(att_pos[:, 0], att_pos[:, 1], c="#00d2d3", edgecolors="#ffffff", s=160, zorder=5, label="Attacking")
+    ax.scatter(def_pos[:, 0], def_pos[:, 1], c="#ff6b6b", edgecolors="#ffffff", s=160, zorder=5, label="Defending")
+    ax.scatter([ball_pos[0]], [ball_pos[1]], c="#fffa65", edgecolors="#000000", s=130, marker="o", zorder=6, label="Ball")
 
-    # Highlight Counterfactual Position if provided
-    if cf_root_pos is not None:
-        ax.scatter([cf_root_pos[0]], [cf_root_pos[1]], c="#1dd1a1", edgecolors="#ffffff", s=280, marker="X", zorder=7, label="Counterfactual Zonal Anchor")
-        ax.annotate(
-            "", xy=(cf_root_pos[0], cf_root_pos[1]), xytext=(root[0], root[1]),
-            arrowprops=dict(arrowstyle="->", color="#1dd1a1", lw=2.2, linestyle="--")
-        )
-
-    # Draw Cascade lines to adjacent affected defenders
-    if cascade_indices:
-        for casc_idx in cascade_indices:
-            tgt = def_pos[casc_idx]
-            ax.annotate(
-                "", xy=(tgt[0], tgt[1]), xytext=(root[0], root[1]),
-                arrowprops=dict(arrowstyle="->", color="#ff9f43", lw=1.8, linestyle=":")
-            )
-
-    # Ball (Bright Yellow)
-    ax.scatter([ball_pos[0]], [ball_pos[1]], c="#fffa65", edgecolors="#000000", s=140, marker="o", zorder=8, label="Ball")
-
-    ax.set_title(title, color="#ffffff", fontsize=13, fontweight="bold", pad=12)
-    legend = ax.legend(loc="lower right", facecolor="#222f3e", edgecolor="#576574", labelcolor="#c8d6e5", fontsize=9)
+    ax.set_title(title, color="#ffffff", fontsize=12, fontweight="bold", pad=10)
+    ax.legend(loc="lower right", facecolor="#222f3e", edgecolor="#576574", labelcolor="#c8d6e5", fontsize=9)

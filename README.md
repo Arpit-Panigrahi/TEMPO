@@ -48,69 +48,11 @@ $$\Delta \mathcal{R} = \frac{\mathcal{S}_{\text{actual}}(t_{\text{threat}}) - \m
 
 ---
 
-## 🚀 Quickstart (30-Second Local CPU Reproduction)
-
-TEMPO is designed with **zero bloat**: the core pilot experiment runs 100% locally on any standard consumer laptop CPU in **under 5 seconds** without requiring a GPU.
-
-### 1. Clone & Install
-```bash
-git clone https://github.com/Arpit-Panigrahi/TEMPO.git
-cd TEMPO
-pip install -r requirements.txt
-```
-
-### 2. Run the Flagship Paper #1 Pilot Experiment
-```bash
-PYTHONPATH=src python3 experiments/paper1_domino_pilot.py
-```
-
-### Output:
-```text
-======================================================================
-  TEMPO: Tactical Emergence & Multi-agent Predictive Orchestrator
-  Paper #1 Pilot Experiment: Domino Moment & Causal Root Attribution
-======================================================================
-[*] Generating 15.0s high-press multi-agent tracking dynamics (FPS=10.0)...
-[*] Threat event (line-breaking pass) occurs at frame 120 (t = 12.00s).
-[*] Computing Spatiotemporal Structural Breakdown Index S(t)...
-
-[+] RESULTS FOUND:
-    - Domino Moment Detected at Frame: 90 (t = 9.00s)
-    - Threat Event at Frame:           120 (t = 12.00s)
-    - Early Predictive Lead Time:       tau_lead = 3.00 seconds
-    - Identified Causal Root Agent:     Defender #2 (LCB / Center-Back)
-
-[*] Simulating Counterfactual Intervention (holding zonal anchor)...
-    - Actual Structural Breakdown at Threat:  1.234
-    - Counterfactual Breakdown at Threat:     0.433
-    - Causal Risk Reduction Achieved:         64.9%
-
-[*] Rendering Publication-Quality Figure 1...
-[SUCCESS] Figure saved to: outputs/domino_moment_pilot.png
-======================================================================
-```
-
-### 3. Run Unit Tests
-```bash
-PYTHONPATH=src python3 tests/test_domino.py
-```
-
----
-
-## 📊 Flagship Pilot Experiment (Figure 1)
-
-The pilot experiment automatically synthesizes a high-press transition breakdown, executes causal attribution, and generates a publication-ready 2-panel figure in `outputs/domino_moment_pilot.png`:
-
-- **Panel A (Tactical State at $\tau_{\text{domino}}$):** Full 105m $\times$ 68m FIFA pitch visualization illustrating the attacking build-up, the decoy run pulling the center-back out of shape, the golden highlight of causal root Defender #2, the counterfactual anchor ($\mathbf{X}$), and the cascading pressure onto adjacent defenders.
-- **Panel B (Temporal Breakdown Dynamics):** Evolution of the Structural Breakdown Index $\mathcal{S}(t)$ vs the Counterfactual trajectory $\mathcal{S}_{\text{CF}}(t)$, highlighting the critical early warning lead time window ($\tau_{\text{lead}} = 3.0\text{s}$).
-
----
-
 ## 🏛️ Repository Architecture
 
 ```text
 TEMPO/
-├── README.md                                          # Executive README & Quickstart
+├── README.md                                          # Executive README & Architecture Spec
 ├── requirements.txt                                   # Minimal CPU-friendly dependencies
 ├── pyproject.toml                                     # Standard Python package build spec
 ├── .gitignore                                         # Git ignore rules for tracking data
@@ -131,24 +73,22 @@ TEMPO/
 │   ├── geometry/                                      # Pitch metrics, convex hulls, Voronoi fields
 │   │   ├── __init__.py
 │   │   └── pitch.py
-│   ├── causal/                                        # Domino detector & counterfactual engine
-│   │   ├── __init__.py
-│   │   └── domino.py
-│   ├── data/                                          # High-fidelity tracking & Metrica data loaders
-│   │   ├── __init__.py
-│   │   └── synthetic_transition.py
-│   └── viz/                                           # Matplotlib pitch & cascade visualizers
+│   ├── causal/                                        # Causal SCM & counterfactual engine
+│   │   └── __init__.py
+│   ├── data/                                          # Real-match optical tracking loaders
+│   │   └── __init__.py
+│   └── viz/                                           # FIFA pitch & cascade visualizers
 │       ├── __init__.py
 │       └── pitch_plotter.py
 │
-├── experiments/                                       # Academic Experiments & Paper Benchmarks
-│   └── paper1_domino_pilot.py                         # Flagship Figure 1 generator
+├── experiments/                                       # Empirical Benchmarks & Experiments
+│   └── .gitkeep
 │
-├── tests/                                             # Fast, zero-dependency unit tests
-│   └── test_domino.py
+├── tests/                                             # Unit & Integration Test Suites
+│   └── .gitkeep
 │
 └── outputs/                                           # Generated figures, tables, and artifacts
-    └── domino_moment_pilot.png
+    └── .gitkeep
 ```
 
 ---
