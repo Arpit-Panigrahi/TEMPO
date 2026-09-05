@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tempo-football"
+version = "0.1.0"
+description = "TEMPO: Tactical Emergence & Multi-agent Predictive Orchestrator - Domino Moments and Causal Roots in Football Dynamics"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+    { name = "Arpit Panigrahi", email = "arpitpanigrahi06@gmail.com" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "matplotlib>=3.7.0",
+]
+
+[project.optional-dependencies]
+fast = [
+    "polars>=0.20.0",
+    "duckdb>=0.9.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "mplsoccer>=1.2.0",
+]

@@ -1,0 +1,19 @@
+# Core Scientific & Geometry Stack (CPU-Friendly, Low-Resource)
+numpy>=1.24.0
+scipy>=1.10.0
+matplotlib>=3.7.0
+
+# Ultra-Fast In-Memory Data Wrangling (Zero RAM Bloat)
+polars>=0.20.0
+duckdb>=0.9.0
+
+# Utilities & Testing
+tqdm>=4.65.0
+pytest>=7.0.0
+
+# Optional / Specialized Visualization
+mplsoccer>=1.2.0
+
+# Optional Cloud/GPU Acceleration (Install via PyTorch index if CUDA available)
+# torch>=2.0.0
+# torch-geometric>=2.3.0

@@ -1,0 +1,52 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Data directories (do not commit gigabytes of raw tracking data)
+data/raw/
+data/processed/
+data/metrica/
+*.dat
+*.csv
+*.parquet
+*.h5
+*.zip
+*.tar.gz
+
+# Keep empty data folders tracked
+!data/.gitkeep
+!data/samples/.gitkeep
+
+# Checkpoints and model weights
+checkpoints/
+models/*.pt
+models/*.pth
+models/*.onnx
+
+# Output artifacts
+outputs/*.png
+outputs/*.mp4
+outputs/*.gif
+!outputs/.gitkeep
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# IDE and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

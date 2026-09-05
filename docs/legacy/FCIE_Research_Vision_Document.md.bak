@@ -1,0 +1,2711 @@
+## Page 1
+
+RESEARCH VISION DOCUMENT · VERSION 1.0
+Football CausalIntelligence Engine
+An Explainable Artificial Intelligence Framework for Discover‐
+ing Hidden Tactical Causal Chains and Critical Match State
+Transitions in Football.
+Arpit
+Principal Investigator & Founder, FCIE Research Initiative
+FCIE · V1.0
+July 2026 
+
+## Page 2
+
+Contents
+I Vision 3
+II Football Theory 9
+III The Research Problem 17
+IV Complete Software Architecture 21
+V Artificial Intelligence 36
+VI Domino Moment Detection 41
+VII Counterfactual Football 46
+VIII The Football Knowledge Graph 50
+IX Coach AI 54
+X Frontend & Dashboards 58
+XI Research Roadmap 61
+XII Publications 64
+XIII Startup Vision 68
+XIV Open Problems 71
+XV Appendices 74
+2
+
+## Page 3
+
+I
+PART ONE
+Vision
+Why football does not yet have an intelligence layer that understands why — and
+what it would take to build one that coaches can trust and interrogate in natural
+language.
+— 1.1 Executive Summary
+— 1.2 Vision Statement
+— 1.3 Philosophy
+— 1.4 Why Football Needs Causal AI
+— 1.5 Why Existing Analytics Are Insufficient
+— 1.6 The Future of Tactical Intelligence
+
+## Page 4
+
+F
+ootball produces more data than almost any sport on earth — twenty-two
+bodies, one ball, ninety minutes, tracked at twenty-five frames a second —
+and yet the questions coaches actually ask in the film room are still answered
+by eye and instinct. Why did we lose control of midfield. What single decision
+opened the game up. Would it have mattered if the full-back had stayed narrow.
+The Football Causal Intelligence Engine (FCIE) exists to close that gap: to take
+the same raw broadcast video everyone already has, and return not a bigger
+pile of statistics, but an explanation with a causal skeleton — the chain of state
+transitions that actually produced the outcome, ranked by how much each one
+mattered, with the counterfactual evidence to back the ranking up.
+1.1Executive Summary
+FCIE is a research platform and, eventually, a product: a pipeline that converts broadcast
+or tactical-camera video into a structured, temporally-indexed world state, builds a know‐
+ledge graph of everything that happened on the pitch, and runs a causal reasoning engine
+over that graph to identify  Domino Moments — the earliest, smallest, highest-leverage
+state  transitions  that  set  an  attacking  or  defensive  sequence  irreversibly  in  motion.  A
+counterfactual simulator then asks, for each candidate Domino Moment, the question no
+traditional metric asks: what would plausibly have happened if this action had not occurred?
+The answer becomes an importance score, the scores become a ranked "narrative," and a
+football-specialised language model turns that narrative into the kind of explanation a
+coach would give in a team meeting — except it is grounded, every time, in retrievable
+evidence rather than post-hoc storytelling.
+This document is the founding technical and conceptual reference for that system. It treats
+FCIE simultaneously as a piece of systems engineering, a research programme in causal
+machine learning applied to multi-agent spatiotemporal data, and a long-horizon academ‐
+ic and commercial trajectory. It draws together three source materials that shaped this
+project: the original FCIE layer-by-layer architecture sketch, a staged "build it like a re‐
+search lab" curriculum for approaching the problem responsibly over years rather than
+weeks, and a full specification for the document you are reading now. Rather than choos‐
+ing  between  them,  this  document  folds  all  three  into  a  single  coherent  whole  —
+architecture, pedagogy, and vision unified.
+PART I — VISION FOOTBALL CAUSAL INTELLIGENCE ENGINE
+4
+
+## Page 5
+
+1.2Vision Statement
+VISION
+To build the first football intelligence system that reasons in causes rather than
+correlations — one that can watch a match the way a world-class analyst watches
+it, but explain what it sees the way a scientist explains a result: with a hypothesis,
+an intervention, and evidence for what would have happened otherwise.
+Every component described in this document — from ByteTrack-based player tracking to a
+Neo4j knowledge graph to a retrieval-grounded football LLM — exists in service of that
+one sentence. Nothing in the stack is there for its own sake; each layer either produces the
+causal evidence or communicates it.
+1.3Philosophy
+Before any code is written, FCIE requires a shift in how football is conceptualised. The
+temptation with any sports-AI project is to start from the metrics everyone already knows
+— expected goals, possession share, pass completion — and try to make them smarter . FCIE
+deliberately starts somewhere else: from six adjacent fields that already know how to reas‐
+on about systems that unfold in time, under uncertainty, with many interacting agents.
+Table 1.1 — Disciplinary lenses that inform FCIE's conceptual foundation
+PART I — VISION FOOTBALL CAUSAL INTELLIGENCE ENGINE
+5
+
+## Page 6
+
+Discipline What it contributes to FCIE
+Systems Theory Football as a system of interacting subsystems (press, shape, trans‐
+ition) rather than a list of independent events; state, not score, is the
+primary unit of analysis.
+Information Theory A vocabulary for space, uncertainty, and surprise — how much a pass
+reduces the defence's uncertainty about where the ball is going, how
+"surprising" a switch of play really was.
+Control Theory Teams as controllers trying to steer the match state toward favourable
+regions (their own box vs. the opponent's) subject to disturbance from
+the opponent — a natural frame for pressing and rest-defence.
+Cognitive Science Players as boundedly-rational decision-makers under time pressure;
+explains why "cognitive load" and decision complexity are first-class
+variables in the state representation, not afterthoughts.
+Complex Adaptive Sys‐
+tems
+Emergent team behaviour (a press trigger , a rotation) that is not expli‐
+citly coded into any single player's instructions but arises from local
+interaction rules — directly motivates the multi-agent and graph-
+based modelling choices in Parts IV–V.
+Network Science The passing network, the pressure network, and the space-occupation
+network as graphs whose topology (centrality, clustering, bridges) is
+itself tactically meaningful — the mathematical seed for the Football
+Knowledge Graph in Part VIII.
+The result of taking this seriously is that FCIE stops thinking in terms of "videos and
+players" and starts thinking in terms of dynamic interacting systems whose state can be
+measured, whose transitions can be modelled, and — critically — whose transitions can, in
+principle, be intervened upon, at least in simulation. That last clause is what makes causal
+reasoning possible at all, and it is the philosophical hinge the rest of this document turns
+on.
+1.4Why Football Needs Causal AI
+Football analytics has spent the last fifteen years building increasingly sophisticated ways
+to answer  "what happened, and how much did it matter on average?" It has almost no
+vocabulary for  "what would have happened instead?" — and that second question is pre‐
+cisely the one coaches ask constantly, usually without realising it is a causal question at all.
+"If we'd pressed higher there, do we win the ball back?" "Did switching to a back three ac‐
+tually stop their overloads, or did they just stop trying?" These are counterfactual ques‐
+tions. Answering them from observational match data — the only kind of data football
+PART I — VISION FOOTBALL CAUSAL INTELLIGENCE ENGINE
+6
+
+## Page 7
+
+produces, since nobody can re-run a match with one decision changed — is exactly the
+problem causal inference was built for .
+Observational sports data is also thick with confounding, in ways that are easy to demon‐
+strate and easy to miss. A team's possession share is lower in matches it wins comfortably
+than in matches it draws, not because possession causes losing, but because a winning
+team happily cedes the ball and sits deeper once ahead — score-state confounds posses‐
+sion. A high press "forces" more turnovers against weaker opponents, but weaker oppon‐
+ents also turn the ball over more regardless of pressing intensity — opponent quality con‐
+founds  pressing  efficacy.  Any  system  that  reports  correlations  from  this  kind  of  data
+without a causal model will, sooner or later , tell a coach something confidently wrong.
+FCIE's founding bet is that this is not a reason to avoid quantitative tactical analysis — it is
+a reason to insist that the analysis be causal, with its assumptions stated, rather than
+associational and silent about them.
+1.5Why Existing Analytics Are Insufficient
+This is not a claim that expected goals, expected threat, or possession-value models are
+wrong — they are genuine, hard-won progress, and FCIE is built to sit on top of them, not
+to replace them. It is a claim that they answer a different question than the one this project
+is aimed at.
+Table 1.2 — What established metrics answer, and what they leave open
+Established ap‐
+proach What it answers What it cannot answer
+Expected Goals
+(xG)
+Given this shot's location,
+angle, and build-up, how often
+does a shot like it become a
+goal?
+Whether the sequence that produced the
+shot was the cause of the shot existing at
+all, or incidental to it.
+Expected Threat /
+possession-value
+chains
+How much did this pass or
+carry raise the probability of
+scoring within the possession?
+Whether the raise was caused by the ac‐
+tion itself or by opponent errors that
+would have produced a similar state re‐
+gardless.
+Action-valuation
+models (VAEP-
+style)
+How does this action compare,
+on average, across thousands
+of similar historical actions?
+What would have happened in this specific
+sequence, against this specific opponent
+shape, had the action not occurred.
+Pressure / PPDA-
+style metrics
+How intensely, on aggregate,
+did a team contest the ball high
+up the pitch?
+Which single pressing action was the dom‐
+ino that actually won the ball back three
+phases later .
+PART I — VISION FOOTBALL CAUSAL INTELLIGENCE ENGINE
+7
+
+## Page 8
+
+The common thread is  attribution without intervention. Every established model as‐
+signs credit to actions that were observed to precede good outcomes; none of them simu‐
+lates the world in which the action did not happen. FCIE's contribution is not a better ver‐
+sion of any one of these metrics — it is the missing layer underneath all of them: a state
+representation rich enough to support intervention, and a reasoning engine willing to ask
+"what if not."
+1.6The Future of Tactical Intelligence
+The long-run product this document is aiming at is not a dashboard with more charts on it.
+It is a coach-facing collaborator that can be asked a genuine tactical question in plain lan‐
+guage and that answers the way a trusted assistant coach would — with an opinion, a
+piece of video evidence, and an honest account of how confident it is and why. Sections IX
+and X describe that system, Coach AI, in detail. But the philosophical commitment starts
+here: explainability is not a feature bolted onto the end of the pipeline for user-interface
+purposes. It is the organising constraint on everything upstream of it. A causal claim that
+cannot be traced back to a specific state transition, a specific counterfactual comparison,
+and a specific piece of video is not a claim FCIE is willing to make — and that discipline,
+more  than  any  individual  model  choice,  is  what  separates  this  project  from  another
+leaderboard of predictive statistics.
+PART I — VISION FOOTBALL CAUSAL INTELLIGENCE ENGINE
+8
+
+## Page 9
+
+II
+PART TWO
+Football Theory
+A conceptual framework built from first principles, deliberately before reaching for
+xG, xT, or any existing metric — because the framework has to support
+intervention, and those metrics were never designed to.
+— 2.1 Football as a Dynamic System
+— 2.2 The Football State Space
+— 2.3 Tactical State Representation
+— 2.4 State Transition Theory
+— 2.5 Domino Moments
+— 2.6 Tactical Momentum
+— 2.7 Spatial Intelligence
+— 2.8 Collective Intelligence
+— 2.9 Information Flow
+— 2.10 Cognitive Load
+— 2.11 Tactical Entropy
+— 2.12 Decision Chains
+— 2.13 Causal Chains & Counterfactual Football
+— 2.14 Match Narrative
+— 2.15 Hidden Tactical Structures
+
+## Page 10
+
+E
+very notation introduced in this Part is original to FCIE — proposed, not
+received. Where it echoes established work (pitch control, expected threat,
+entropy-based tactical measures) that lineage is acknowledged in prose, but the
+symbols and formal definitions are written fresh, because a causal engine needs
+a state space built for intervention from the ground up, not one inherited from
+metrics that were built for description.
+2.1Football as a Dynamic System
+The starting commitment is simple to state and consequential to take seriously: a football
+match is not a list of events, it is a trajectory through a state space. Goals, passes, and
+tackles are not the primitive objects of analysis — they are discrete, human-legible labels
+that get attached, after the fact, to continuous changes in a much richer underlying state. A
+system-theoretic view treats the match as a dynamical system:
+St+1 = T(St, Athome, Ataway, εt)
+where St is the match state at time t, Athome / Ataway are the joint actions of the two teams' twenty-two
+agents, T is the (unknown, learnable) transition function, and εt captures irreducible randomness — a
+bobble, a slip, a gust of wind.
+This reframing has an immediate practical consequence: the object FCIE tracks, stores, and
+reasons over is  St, not "events." Events become queries over the state trajectory, not the
+primary data structure — a reversal of how almost every existing analytics platform is
+built.
+2.2The Football State Space
+Formally, FCIE defines the match state at time t as a tuple:
+St = ⟨ Pt, Bt, Vt, Ot, Φt, Πt, Λt, Ct ⟩
+Table 2.1 — Components of the FCIE match state St
+PART II — FOOTBALL THEORY FOOTBALL CAUSAL INTELLIGENCE ENGINE
+10
+
+## Page 11
+
+Symbol Component Description
+Pt Player posi‐
+tions
+22 × (x, y) coordinates in pitch-normalised space.
+Bt Ball state Position, height, and velocity of the ball.
+Vt Velocities Instantaneous velocity vector for every tracked agent, including
+the ball.
+Ot Pose & orient‐
+ation
+Body and head orientation per player — a proxy for visual
+attention and next-action affordance.
+Φt Formation /
+shape
+A learned embedding of team shape, not a hard-coded label like
+"4-3-3."
+Πt Pressure fieldA scalar field over the pitch giving defensive pressure intensity at
+every point (Section 2.7).
+Λt Passing lanes The set of currently viable passing options, each with an
+interception-risk estimate.
+Ct Game contextScore, time remaining, cards, substitutions — the "meta-state" that
+conditions everything else.
+Note what is deliberately absent: there is no field for "event type." A pass, a tackle, a shot —
+these are not stored, they are detected as characteristic patterns in how St changes over a
+short window. This is the single most important design decision in the entire theoretical
+framework, because it is what makes the state space intervenable: you cannot counterfac‐
+tually  remove  "a  pass"  from  a  system  that  only  stores  passes  as  labels,  but  you  can
+counterfactually perturb Pt, Bt, and Vt and ask what T would have produced next.
+2.3Tactical State Representation
+St is low-level and enormous — far too high-dimensional for causal reasoning or for a
+coach to reason about directly. FCIE therefore defines a tactical abstraction function φ that
+compresses St into a tactical state:
+τt = φ(St) = ⟨ phase, block-height, overload-index, rest-defence-score,
+transition-flag ⟩
+φ  is  not  hand-written;  it  is  learned  (Part  V,  Section  5.2)  but  constrained  by  football-
+meaningful supervision — phase labels such as build-up, progression, final-third, transition,
+PART II — FOOTBALL THEORY FOOTBALL CAUSAL INTELLIGENCE ENGINE
+11
+
+## Page 12
+
+and  defensive recovery act as weak labels that keep the learned embedding aligned with
+concepts a coach already uses. τt is what the Tactical Understanding layer (Part IV, Module
+5) produces, and it is the resolution at which Domino Moments are ultimately described in
+natural language, even though they are detected at the resolution of St.
+2.4State Transition Theory
+Naively, football looks Markovian — St+1 depends only on St and the actions taken. In prac‐
+tice it is not, and pretending otherwise is a common failure mode of simpler tactical mod‐
+els. A midfielder's positioning at minute 60 is influenced by a pressing trap sprung at
+minute 12 that reshaped the opponent's risk appetite for the rest of the half. FCIE therefore
+models transitions as non-Markovian with structured memory:
+St+1 = T(St, St-1, …, St-k, Mt, At)
+where Mt is a compressed memory state carried forward by the Temporal Memory layer (Part IV, Mod‐
+ule 6) — the system's equivalent of "what this match has taught both teams about each other so far ."
+This is the theoretical justification for a dedicated temporal-memory subsystem rather
+than a sliding window: some dependencies genuinely span the full ninety minutes, and a
+fixed-length window either wastes compute on irrelevant history or truncates relevant
+history, depending on how it is tuned.
+2.5Domino Moments
+WORKING DEFINITION
+A Domino Moment is a state transition St → St+1 such that a plausible counterfac‐
+tual alternative transition would have led, with high estimated probability, to a ma‐
+terially different downstream outcome — and which occurs earlier in the causal
+chain than any other transition with comparable downstream influence.
+Two clauses do the real work here. "Materially different downstream outcome" is what
+separates a Domino Moment from mere noise — a misplaced five-yard pass that has no
+bearing on what follows is not one, however imperfect it looks. "Earlier than any other
+transition with comparable influence" is what separates a Domino Moment from the final,
+obvious action (the assist, the shot) that everyone already credits — FCIE is explicitly
+hunting for the earliest point the outcome became likely, which is usually further back and
+less visually dramatic than the moment everyone remembers. The full detection theory —
+PART II — FOOTBALL THEORY FOOTBALL CAUSAL INTELLIGENCE ENGINE
+12
+
+## Page 13
+
+algorithms,  evaluation,  limitations  —  is  developed  in  Part  VI;  this  section  fixes  the
+concept's place in the state-space formalism.
+2.6Tactical Momentum
+Momentum is real to every coach and notoriously hard to quantify honestly. FCIE defines
+it as the first derivative of a rolling territorial-and-control estimate rather than anything
+score-based (score-based "momentum" is confounded with game-state, per Section 1.4):
+μt = d/dt   [ w1·PCtown-half + w2·xTtrolling + w3·PPDAt-1 ]window=5min
+where PC is pitch control share (Section 2.7) and the weights w are fit, not asserted. Mo‐
+mentum in this framing is a diagnostic signal that feeds the Domino Moment detector — a
+large, sustained swing in μt is a strong prior that a Domino Moment occurred somewhere
+in the preceding window, narrowing the search space considerably.
+2.7Spatial Intelligence
+Space in football is not empty pitch; it is contested probability. FCIE generalises Voronoi-
+style pitch division (in the spirit of established probabilistic pitch-control research) into a
+continuous control field:
+pteam(x, y, t) = P( team reaches (x, y) first | St )
+a probability field over every point on the pitch, conditioned on current positions, velocities, and
+reaction-time priors — not a hard territorial split.
+Dangerous space, numerical overloads, and passing-lane viability (Λt) are all downstream
+functions of this one field, which is why Spatial Intelligence sits as its own architectural
+layer (Part IV, Module 4) rather than being folded into detection or tracking.
+2.8Collective Intelligence
+No single player's policy explains a coordinated press trap; it emerges from eleven local
+decision rules interacting. FCIE treats each team as a multi-agent system and looks for
+emergent coordination signatures — synchronised trigger movements, simultaneous rota‐
+tion — as graph-level properties of the interaction network at time t (formalised in Part
+VIII), rather than trying to attribute the trap to any one player's individual action value.
+This is also the conceptual justification for treating Graph Neural Networks (Part V) as the
+PART II — FOOTBALL THEORY FOOTBALL CAUSAL INTELLIGENCE ENGINE
+13
+
+## Page 14
+
+natural model class for tactical understanding: GNNs are built to let local interactions
+produce emergent global structure, which is exactly the phenomenon being modelled.
+2.9Information Flow
+The  passing  network  at  any  point  in  the  match  has  measurable  information-theoretic
+structure. FCIE defines the information carried by a pass as the reduction in the defence's
+uncertainty about the ball's future location:
+IG(pass) = H( Bt+1..t+n | St ) − H( Bt+1..t+n | St, pass )
+A pass that goes exactly where every defender expected carries almost no information
+gain, however technically well executed; a disguised switch of play that the defensive
+block did not anticipate carries a great deal, independent of whether it "worked" in a sco‐
+reline sense. This gives FCIE a principled, outcome-independent way to flag surprising ac‐
+tions as Domino Moment candidates, since surprising actions are disproportionately likely
+to be the ones that force a genuine state change rather than a continuation of the status
+quo.
+2.10Cognitive Load
+Players make decisions under time pressure with a bounded set of options; the size and
+difficulty of that option set is itself tactically meaningful. FCIE proxies cognitive load at the
+moment of a decision as a function of the branching factor and pressure the ball-carrier
+faces:
+L(player, t) = f( |Λt|, Πt(xplayer, yplayer), Δtavailable )
+the number of live options, the pressure at the player's location, and the time before that pressure
+closes the option set.
+High cognitive load at the instant a Domino Moment occurs is football-relevant context a
+coach cares about — "he had four seconds and three passing lanes closing" is a very differ‐
+ent training point than "he had all day" — and it is retained as an annotation on every
+detected Domino Moment rather than discarded after detection.
+PART II — FOOTBALL THEORY FOOTBALL CAUSAL INTELLIGENCE ENGINE
+14
+
+## Page 15
+
+2.11Tactical Entropy
+Distinct  from  the  information  carried  by  a  single  action  (Section  2.9),  tactical  entropy
+measures how disordered the match state itself is at a given moment — how unpredictable
+the near-future distribution of outcomes has become:
+H(St) = − Σi pi log pi
+where {pi} is the probability distribution over discretised pitch-control zones, or equivalently over a
+short-horizon set of likely next outcomes (regain, progression, shot, loss of possession).
+Low entropy corresponds to a settled, structured phase — a team playing calm build-up
+against a passive block. High entropy corresponds to transition chaos — the seconds after
+a turnover , before either team has re-organised. Empirically, this is exactly where Domino
+Moments cluster , which makes H(St) a second, independent prior (alongside momentum,
+Section 2.6) for narrowing the search space in Part VI's detection algorithms.
+2.12Decision Chains
+A possession is a sequence of decisions, each conditioned on the last: receive, scan, decide,
+execute. FCIE represents this as a directed decision graph D = (V, E) where each node v ∈ V
+is a player-decision-point (a moment the ball-carrier chose an action from a live option set
+Λt) and each edge encodes the state transition that decision produced. Decision Chains are
+the substrate Domino Moment search operates over: rather than scanning every milli‐
+second of raw state, the search space is pruned to nodes in D, which are, by construction,
+exactly the moments where a genuine choice — and therefore a genuine counterfactual
+alternative — existed.
+2.13Causal Chains & Counterfactual Football
+A Decision Chain becomes a Causal Chain once edges are weighted by estimated causal in‐
+fluence rather than mere temporal adjacency. FCIE adopts a structural causal model (SCM)
+view, in the tradition of Pearl's do-calculus, applied to the decision graph:
+P( outcome | do(vi = a) )  vs.  P( outcome | do(vi = a′) )
+the causal effect of intervening on decision node vi — setting it to the observed action a versus a coun‐
+terfactual alternative a′ — on some downstream outcome (a goal, a regain, entry into the final third).
+PART II — FOOTBALL THEORY FOOTBALL CAUSAL INTELLIGENCE ENGINE
+15
+
+## Page 16
+
+This is the formal seed of Counterfactual Football, developed fully in Part VII: the entire
+enterprise depends on being able to state, and eventually estimate, this comparison for
+real in-match decisions, using the world-model machinery described in Parts IV–V.
+2.14Match Narrative
+Once Domino Moments are identified and causally weighted, stringing the highest-influ‐
+ence ones together in temporal order yields what FCIE calls the Match Narrative — a com‐
+pact, causally-ordered account of how the outcome actually came about, distinct from a
+chronological highlight reel because it is filtered by influence, not by visual drama. A
+Match  Narrative  is  the  direct  input  to  the  Football  LLM  (Part  IV,  Module  10)  and  the
+primary object a Coach AI report is built from (Part IX).
+2.15Hidden Tactical Structures
+Not everything tactically meaningful is visible in Pt, Bt, and their derivatives. A coach's pre-
+match instruction to "bait the press then go long" produces a latent intent that only shows
+up statistically as a pattern across many decision points, never as a directly observable
+variable.  FCIE's  final  theoretical  commitment  is  that  the  tactical  state  includes  latent
+variables Zt that must be inferred rather than measured:
+Stfull = ⟨ St, Zt ⟩  ,  Zt inferred via representation learning (Part V,
+Section 5.10)
+This is deliberately left open rather than fully specified — Part XIV returns to it as one of
+the field's genuinely unsolved problems — but it is stated here because ignoring latent
+structure and pretending τt = φ(St) captures everything a coach means by "tactics" would
+be a quiet, compounding source of error throughout every later layer of the system.
+PART II — FOOTBALL THEORY FOOTBALL CAUSAL INTELLIGENCE ENGINE
+16
+
+## Page 17
+
+III
+PART THREE
+The Research Problem
+From the state of the field, to the gap in it, to the specific questions FCIE commits
+to answering — and the hypotheses that make those questions falsifiable rather
+than aspirational.
+— 3.1 Current Football Analytics
+— 3.2 Problems With the Status Quo
+— 3.3 The Research Gap
+— 3.4 Novel Research Questions
+— 3.5 Hypotheses
+— 3.6 Expected Contributions
+
+## Page 18
+
+P
+art I argued informally that existing analytics are insufficient for causal
+explanation. This Part makes that argument precise enough to be falsifi‐
+able — the standard a research programme, as opposed to a product pitch, has
+to meet.
+3.1Current Football Analytics
+The last decade of public and commercial football analytics has converged on a small fam‐
+ily of approaches: shot-quality models (expected goals), possession-value models that cred‐
+it every touch with a change in scoring probability (expected threat and its VAEP-style des‐
+cendants), pressing-intensity ratios (PPDA and its variants), and, more recently, tracking-
+derived spatial models (pitch control, off-ball value). These are real scientific achievements
+— they replaced pure box-score counting with probabilistic, spatially aware reasoning,
+and FCIE's own state representation (Part II) is a direct intellectual descendant of the
+tracking-data research programme that produced pitch control.
+3.2Problems With the Status Quo
+Associational, not causal. Every model above is fit to predict or value observed se‐
+quences;  none  is  built  to  answer  what  would  have  happened  under  a  different  se‐
+quence.
+Event independence assumption. Most valuation models score actions using local con‐
+text  windows  and  implicitly  treat  actions  as  (near-)independent  for  aggregation
+purposes, understating long-range dependency (Section 2.4).
+No opponent-adaptation model. Metrics rarely account for the fact that the opponent
+would have played differently in the counterfactual world, not just the team in posses‐
+sion  —  a  second-order  effect  that  is  usually  the  difference  between  a  plausible
+counterfactual and a naive one.
+Silent confounding. Score-state, opponent quality, and fixture context confound almost
+every raw statistic (Section 1.4), and most public dashboards present numbers without
+the conditioning that would make them safe to compare.
+No native explanation layer . A number , however well-estimated, is not an explanation.
+Coaches are left to construct the causal story themselves from a spreadsheet of valu‐
+ations.
+• 
+• 
+• 
+• 
+• 
+PART III — RESEARCH PROBLEM FOOTBALL CAUSAL INTELLIGENCE ENGINE
+18
+
+## Page 19
+
+3.3The Research Gap
+No existing public framework performs  causal attribution across a full possession
+chain, grounded in multi-agent spatiotemporal state, with an explicit counterfactual es‐
+timation step and a natural-language explanation layer that cites its evidence. Pieces of
+this exist in isolation — counterfactual reasoning has deep roots in causal ML broadly; pos‐
+session-chain valuation exists in football specifically; world models exist in reinforcement
+learning and robotics — but the combination, applied end-to-end to broadcast football
+video with a coach-facing explanation interface, does not yet exist as an integrated system.
+That combination is FCIE's research gap.
+3.4Novel Research Questions
+3.5Hypotheses
+Can a Domino Moment — the earliest high-influence state transition in a possession
+— be identified reliably from broadcast-quality tracking data, and does "earliest" cor‐
+relate with what human expert analysts independently flag as the turning point?
+RQ1
+How well does a learned world model's counterfactual rollout ("what happens next if
+this pass doesn't happen") agree with plausible alternative continuations, as judged
+by domain experts blind to which continuation was real?
+RQ2
+Does explicitly modelling opponent adaptation in the counterfactual branch (Part VII)
+change causal-importance rankings materially compared to holding the opponent's
+policy fixed?
+RQ3
+Can tactical entropy and information-gain signals (Sections 2.9, 2.11) serve as effect‐
+ive  priors  that  reduce  the  Domino  Moment  search  space  without  meaningfully
+hurting recall against expert-labelled turning points?
+RQ4
+Does  grounding  LLM-generated  tactical  explanations  in  a  retrieved,  causally-
+weighted subgraph reduce hallucinated or unsupported tactical claims compared to
+an ungrounded LLM given the same match summary?
+RQ5
+Do latent tactical structures (Section 2.15), inferred via self-supervised representation
+learning on unlabelled broadcast footage, transfer across leagues and playing styles,
+or are they league-specific artefacts?
+RQ6
+Domino  Moments  identified  by  causal-influence  ranking  will  precede  the  actions
+credited by possession-value models (xT/VAEP-style) in a majority of high-value se‐
+quences — i.e., the "real" turning point is earlier than the celebrated one.
+H1
+PART III — RESEARCH PROBLEM FOOTBALL CAUSAL INTELLIGENCE ENGINE
+19
+
+## Page 20
+
+3.6Expected Contributions
+A  formally  specified,  intervenable  football  state  representation  (Part  II)  usable
+independently of the rest of the FCIE stack.
+A benchmark task and evaluation protocol for Domino Moment detection, including an
+expert-agreement metric (Part VI).
+An  open  methodology  for  counterfactual  trajectory  estimation  in  multi-agent  team
+sports (Part VII), applicable beyond football to any tracked invasion sport.
+A reference architecture for retrieval-grounded, causally-cited sports LLM explanation
+(Parts VIII–IX).
+A public Football Knowledge Graph schema (Part VIII) intended as a shared substrate
+other researchers can build on rather than a proprietary format.
+Counterfactual importance scores will correlate more strongly with independent ex‐
+pert turning-point labels than any single existing valuation metric used alone.
+H2
+Modelling opponent adaptation will systematically reduce estimated counterfactual
+impact relative to fixed-opponent baselines, because fixed-opponent counterfactuals
+overstate how much space a changed action would actually have found.
+H3
+Graph-grounded LLM explanations will show a measurably lower rate of unsuppor‐
+ted factual claims, evaluated against retrieved evidence, than the same base model
+prompted only with a text match summary.
+H4
+• 
+• 
+• 
+• 
+• 
+PART III — RESEARCH PROBLEM FOOTBALL CAUSAL INTELLIGENCE ENGINE
+20
+
+## Page 21
+
+IV
+PART FOUR
+Complete Software Architecture
+Twenty modules, one consistent template each: purpose, responsibilities, inputs,
+outputs, internal algorithms, dependencies, failure modes, scalability, and what
+comes next.
+— 4.1 System Overview
+— 4.2 Perception & State Modules
+— 4.3 Reasoning & Knowledge Modules
+— 4.4 Delivery & API Modules
+— 4.5 Platform & Infrastructure Modules
+— 4.6 Cross-Cutting Concerns
+
+## Page 22
+
+4.1System Overview
+FCIE is organised as four concentric layers — perception, state and knowledge, reasoning,
+and delivery — connected through an event-driven backbone rather than direct point-to-
+point calls, so that any layer can be re-trained, re-deployed, or swapped without a full-
+system outage. The diagram below expands the original single-line pipeline sketch into its
+true fan-out: the Knowledge Graph and Temporal Memory are shared substrates that both
+the Causal Reasoning Engine and the Football LLM read from, and the API Gateway is the
+single point of contact for every downstream client.
+Fig. 4.1 — FCIE end-to-end architecture. Modules ⑬–⑳ (platform & infrastructure) run underneath every box shown
+here and are detailed in §4.5–4.6.
+┌─────────────────┐
+│  Broadcast /    │
+│  Tactical-cam   │
+│  Video Feed     │
+└────────┬────────┘
+         ▼
+┌─────────────────────────── PERCEPTION LAYER ───────────────────────────┐
+│  ① Video Ingestion  →  ② Computer Vision  →  ③ World State Builder     │
+│     (FFmpeg/calib)      (detect·track·pose)      (per-frame S_t)       │
+└─────────────────────────────────┬────────────────────────────────────┘
+                                    ▼
+┌─────────────────────── STATE & UNDERSTANDING LAYER ────────────────────┐
+│   ④ Spatial Intelligence   ⑤ Tactical Understanding   ⑥ Temporal Memory │
+│     (pitch control p_team)   (phase / press / block)    (long-range M_t)│
+└──────────────┬──────────────────────────────────┬─────────────────────┘
+               ▼                                    ▼
+┌───────────────────┐                  ┌──────────────────────┐
+      │ ⑦ Football        │◄────────────────►│  ⑧ Causal Reasoning  │
+      │   Knowledge Graph  │                  │     Engine            │
+      │   (Neo4j, temporal)│                  │  (Domino detection)   │
+└─────────┬──────────┘                  └──────────┬────────────┘
+                │                                          ▼
+                │                             ┌──────────────────────┐
+                │                             │ ⑨ Counterfactual      │
+                │                             │    Simulator           │
+                │                             └──────────┬────────────┘
+                ▼                                        ▼
+┌──────────────────────────────────────────────────────────┐
+      │            ⑩ Football LLM  (RAG over ⑦, cites ⑧/⑨)         │
+└───────────────────────────┬──────────────────────────────┘
+                                    ▼
+┌───────────────────────┐
+                        │  ⑪ API Gateway         │
+└───────────┬───────────┘
+                                    ▼
+                  ⑫ Coach Dashboard  /  Analyst API  /  Mobile
+PART IV — SOFTWARE ARCHITECTURE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+22
+
+## Page 23
+
+4.2Perception & State Modules
+① Video Ingestion Pipeline PERCEPTION
+PURPOSE Turn a raw broadcast or fixed tactical-camera feed into a calibrated, timestamp-
+aligned frame stream every downstream module can trust.
+RESPONSIBILITIES Ingest upload or live stream; extract frames at target FPS; camera calibration and
+pitch-plane homography; multi-camera timestamp sync.
+INPUTS Video file or RTMP/HLS stream; optional camera-position metadata.
+OUTPUTS Calibrated frame stream with per-frame pitch-coordinate homography matrix and
+timestamp.
+INTERNAL AL‐
+GORITHMS
+Homography estimation from pitch-line detection; keyframe-based re-calibration for
+camera pans/zooms; FFmpeg-based decode.
+DEPENDENCIES FFmpeg, OpenCV; object storage (raw footage retention).
+FAILURE MODES Poor calibration under rapid camera pans; dropped frames on unstable live streams;
+broadcast cuts (replays, adverts) polluting the timeline.
+SCALABILITY Embarrassingly parallel across matches; GPU-accelerated decode for live multi-match
+ingestion.
+FUTURE IM‐
+PROVEMENTS
+Multi-camera fusion for single-feed occlusion recovery; automatic broadcast-cut
+detection to mask non-play segments.
+PART IV — SOFTWARE ARCHITECTURE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+23
+
+## Page 24
+
+② Computer Vision Layer PERCEPTION
+PURPOSE Convert pixels into the raw ingredients of St: who is where, moving how, facing
+which way.
+RESPONSIBILITIES Player/referee/ball detection; multi-object tracking with re-identification across
+occlusion; pose estimation; (future) jersey-number OCR.
+INPUTS Calibrated frame stream from Module ①.
+OUTPUTS Per-frame records: {frame, player_id, x, y, velocity, orientation, ball_position, confid‐
+ence}.
+INTERNAL AL‐
+GORITHMS
+YOLOv11/RT-DETR for detection; ByteTrack or StrongSORT for tracking-by-detection;
+MediaPipe/HRNet-family for pose.
+DEPENDENCIES GPU inference cluster (Module ⑯); calibration output from Module ①.
+FAILURE MODES Identity switches during pile-ups and goal celebrations; ball occlusion during head‐
+ers/tackles; far-side player miniaturisation reducing detection confidence.
+SCALABILITY Batched GPU inference; tracker state is per-match and horizontally shardable across
+concurrent matches.
+FUTURE IM‐
+PROVEMENTS
+Learned re-identification embeddings robust to kit changes (goalkeepers, second-half
+kit swaps); jersey-number recognition to remove manual ID mapping.
+PART IV — SOFTWARE ARCHITECTURE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+24
+
+## Page 25
+
+③ World State Builder PERCEPTION
+PURPOSE Assemble raw per-frame CV output into the structured St tuple defined in Part II.
+RESPONSIBILITIES Coordinate normalisation to a standard pitch frame; velocity/acceleration smoothing;
+team-side and formation-label assignment; context merge (score, clock, cards).
+INPUTS CV layer output; match metadata feed (score, substitutions, officials).
+OUTPUTS Time-indexed St records, persisted to the time-series store and streamed to Modules
+④–⑥.
+INTERNAL AL‐
+GORITHMS
+Kalman/particle-filter smoothing of noisy tracks; rule-based team/side assignment
+with learned fallback.
+DEPENDENCIES Time-series database (Module ⑮); Module ② output stream.
+FAILURE MODES Smoothing over-correction during genuine sharp accelerations (sprints, sliding
+tackles); metadata-feed lag desynchronising score/clock from tracking.
+SCALABILITY Streaming (Kafka-style) construction enables near-real-time St for live matches, not
+just post-hoc batch.
+FUTURE IM‐
+PROVEMENTS
+Uncertainty-aware state (confidence intervals on position, not point estimates)
+propagated into every downstream layer .
+PART IV — SOFTWARE ARCHITECTURE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+25
+
+## Page 26
+
+④ Spatial Intelligence Engine UNDERSTANDING
+PURPOSE Compute the pitch-control field pteam(x,y,t) and everything derived from it (Section
+2.7).
+RESPONSIBILITIES Dynamic Voronoi/probabilistic control regions; dangerous-space scoring; numerical-
+overload detection; passing-lane enumeration and interception-risk.
+INPUTS St stream from Module ③.
+OUTPUTS Πt (pressure field), Λt (passing lanes), occupancy/control grids at configurable resolu‐
+tion.
+INTERNAL AL‐
+GORITHMS
+Probabilistic pitch-control models conditioned on velocity and reaction time; graph-
+based occupancy reasoning for overload counts.
+DEPENDENCIES GPU or vectorised CPU grid computation; Module ③.
+FAILURE MODES Grid resolution trade-offs (coarse grids miss tight overloads; fine grids are compute-
+heavy at scale); reaction-time priors that don't generalise across leagues/age groups.
+SCALABILITY Per-frame computation is independent and GPU-vectorisable across the whole pitch
+grid simultaneously.
+FUTURE IM‐
+PROVEMENTS
+Player-specific reaction and top-speed priors learned from historical tracking rather
+than league-wide constants.
+PART IV — SOFTWARE ARCHITECTURE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+26
+
+## Page 27
+
+⑤ Tactical Understanding UNDERSTANDING
+PURPOSE Produce the tactical abstraction τt = φ(St) defined in Section 2.3.
+RESPONSIBILITIES Phase classification (build-up, progression, transition, defensive recovery); press-
+trigger and block-height recognition; overload and rest-defence scoring.
+INPUTS St, Πt, Λt from Modules ③–④.
+OUTPUTS τt tactical-state stream; phase-change events for Module ⑥.
+INTERNAL AL‐
+GORITHMS
+Temporal transformers / TCNs over windows of St; weak supervision from coach-
+provided phase tags for alignment.
+DEPENDENCIES Modules ③–④; a labelled phase dataset for supervision/fine-tuning.
+FAILURE MODES Ambiguous phase boundaries (build-up sliding into progression has no hard edge);
+label scarcity for rarer phases (rest-defence in transition).
+SCALABILITY Windowed inference batches cheaply; model size is the main lever on latency for live
+use.
+FUTURE IM‐
+PROVEMENTS
+Self-supervised pre-training on unlabelled footage (Part V, §5.9) to reduce
+dependence on scarce phase labels.
+PART IV — SOFTWARE ARCHITECTURE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+27
+
+## Page 28
+
+⑥ T emporal Memory Layer UNDERSTANDING
+PURPOSE Carry the compressed memory state Mt that makes non-Markovian transitions
+(Section 2.4) tractable.
+RESPONSIBILITIES Long-range dependency storage; match-level "what both teams have learned so far"
+summarisation; retrieval of relevant historical state for the Causal Reasoning Engine.
+INPUTS τt stream; phase-change events from Module ⑤.
+OUTPUTS Mt memory embeddings; retrievable historical-state index.
+INTERNAL AL‐
+GORITHMS
+Transformer memory / recurrent state-space models; vector index for similarity
+retrieval over past tactical states.
+DEPENDENCIES Vector database (Module ⑮); Module ⑤ output.
+FAILURE MODES Memory dilution over very long matches (extra time); irrelevant-history retrieval
+polluting causal search.
+SCALABILITY Memory embeddings are fixed-size regardless of match length; retrieval scales with
+vector-index size, not raw frame count.
+FUTURE IM‐
+PROVEMENTS
+Season-level memory spanning multiple matches, for "this is the third time this team
+has been exposed by the same trap" reasoning.
+PART IV — SOFTWARE ARCHITECTURE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+28
+
+## Page 29
+
+4.3Reasoning & Knowledge Modules
+⑦ Football Knowledge Graph REASONING
+PURPOSE Persist every entity and relationship the reasoning and language layers need to
+query — the shared substrate of the system. Full schema in Part VIII.
+RESPONSIBILITIES Ingest entities (players, teams, spaces, passes, tactical states) and relationships (cre‐
+ated, blocked, occupied, pressed, supported, enabled) with temporal validity.
+INPUTS τt, Mt, and Domino Moment records from Modules ⑤, ⑥, ⑧.
+OUTPUTS Queryable graph (Cypher); subgraph retrieval for RAG (Module ⑩).
+INTERNAL AL‐
+GORITHMS
+Incremental graph construction; temporal edge versioning; graph embeddings for
+approximate/semantic queries.
+DEPENDENCIES Neo4j (or equivalent property graph store); ingestion queue from upstream modules.
+FAILURE MODES Schema drift as new edge types are added ad hoc; write contention during high-
+frequency live-match ingestion.
+SCALABILITY Read replicas for dashboard/LLM query load; write path sharded by match.
+FUTURE IM‐
+PROVEMENTS
+Cross-match, cross-season graph federation for opponent scouting queries that span
+a whole competition.
+PART IV — SOFTWARE ARCHITECTURE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+29
+
+## Page 30
+
+⑧ Causal Reasoning Engine REASONING RESEARCH CORE
+PURPOSE Identify Domino Moments and rank them by estimated causal influence. The heart of
+FCIE — full theory in Part VI.
+RESPONSIBILITIES Candidate decision-point search over the Decision Chain (Section 2.12); influence es‐
+timation; importance ranking; evidence packaging for downstream explanation.
+INPUTS St, τt, Decision Chain graph; counterfactual estimates from Module ⑨.
+OUTPUTS Ranked Domino Moment list with influence scores and supporting evidence, written
+to Module ⑦.
+INTERNAL AL‐
+GORITHMS
+Attention attribution; Shapley-style causal credit assignment; graph influence
+propagation; temporal Granger-inspired discovery (Part VI, §6.4).
+DEPENDENCIES Module ⑨ for counterfactual queries; Module ⑥ for long-range context.
+FAILURE MODES Confounded influence estimates when opponent quality or game-state is not ad‐
+equately controlled for; small per-match sample sizes limiting statistical confidence.
+SCALABILITY Post-match batch mode is embarrassingly parallel across matches; live in-match
+ranking requires a lower-latency approximate mode.
+FUTURE IM‐
+PROVEMENTS
+Cross-match causal-effect pooling to shrink small-sample estimates toward league-
+level priors.
+PART IV — SOFTWARE ARCHITECTURE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+30
+
+## Page 31
+
+⑨ Counterfactual Simulator REASONING
+PURPOSE Answer "what happens next if this action had been different" — full framework in
+Part VII.
+RESPONSIBILITIES Perturb St at a candidate decision point; roll forward under a learned world model
+with opponent-adaptation; compare against the observed continuation.
+INPUTS Candidate decision point from Module ⑧; world-model weights (Part V, §5.7).
+OUTPUTS Counterfactual trajectory samples; influence-score components consumed by Module
+⑧.
+INTERNAL AL‐
+GORITHMS
+Learned world-model rollout; synthetic-control matching against similar historical
+situations; generative trajectory sampling.
+DEPENDENCIES GPU inference (Module ⑯); historical St corpus for matching-based methods.
+FAILURE MODES Sim-to-real gap between learned rollouts and true human behaviour under novel
+perturbations (Part XIV, §14.5); compounding error over long rollout horizons.
+SCALABILITY Rollouts are independently parallelisable across candidate decision points and
+sample counts.
+FUTURE IM‐
+PROVEMENTS
+Multi-agent RL-trained opponent policies in place of the current heuristic adaptation
+model (Part V, §5.8).
+PART IV — SOFTWARE ARCHITECTURE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+31
+
+## Page 32
+
+⑩ Football LLM / RAG Layer DELIVERY
+PURPOSE Convert ranked, evidence-backed Domino Moments into natural-language tactical ex‐
+planation.
+RESPONSIBILITIES Retrieve relevant subgraph/evidence for a query or report; generate grounded,
+citation-linked prose; answer free-form coach questions (Part IX).
+INPUTS User query or report trigger; retrieved subgraph from Module ⑦; Domino Moment
+evidence from Module ⑧.
+OUTPUTS Natural-language explanation with citations back to specific graph nodes and video
+timestamps.
+INTERNAL AL‐
+GORITHMS
+Retrieval-augmented generation over the knowledge graph; function-calling into
+Modules ⑦–⑨ for on-demand evidence lookup.
+DEPENDENCIES Locally-hosted open-weight model (Llama/Qwen/Mistral family); Module ⑦ query in‐
+terface.
+FAILURE MODES Hallucinated claims not actually supported by retrieved evidence; over-confident
+natural-language tone masking low underlying causal-confidence scores.
+SCALABILITY Stateless request-response; scales horizontally behind Module ⑫ with standard LLM-
+serving infrastructure.
+FUTURE IM‐
+PROVEMENTS
+Fine-tuning on football-specific tactical vocabulary; automatic confidence-to-
+language calibration so uncertain claims are phrased as such.
+PART IV — SOFTWARE ARCHITECTURE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+32
+
+## Page 33
+
+4.4Delivery & API Modules
+4.5Platform & Infrastructure Modules
+Table 4.1 — Platform modules ⑬–⑳, condensed
+⑪ API Gateway DELIVERY
+PURPOSE Single, authenticated entry point for every client — dashboard, analyst tooling, third-
+party integrations.
+RESPONSIBILITIES Request routing to internal services; rate limiting; authentication/authorisation
+(Module ⑳); response caching for expensive queries.
+INPUTS REST/GraphQL requests from clients (schema in Part XV, §15.4).
+OUTPUTS JSON responses; server-sent events for live-match streaming updates.
+INTERNAL AL‐
+GORITHMS
+Standard gateway routing; token-bucket rate limiting; response-level caching keyed
+on match+query fingerprint.
+DEPENDENCIES Redis (Module ⑮) for caching and rate-limit state; downstream microservices.
+FAILURE MODES Cache staleness during live matches if invalidation is not tied correctly to new-state
+events.
+SCALABILITY Stateless, horizontally scaled behind a load balancer .
+FUTURE IM‐
+PROVEMENTS
+GraphQL subscriptions for fully push-based live dashboard updates.
+PART IV — SOFTWARE ARCHITECTURE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+33
+
+## Page 34
+
+Module Purpose Key Choices Primary Failure Mode
+⑬ Mi‐
+croservices &
+Orchestration
+Isolate each layer
+(①–⑪) as an
+independently de‐
+ployable, independ‐
+ently scalable ser‐
+vice.
+Docker images per mod‐
+ule; Kubernetes for
+scheduling, autoscaling,
+and rolling deploys.
+Cascading failure if ser‐
+vice-mesh timeouts/re‐
+tries aren't tuned per
+module's real latency
+profile.
+⑭ Cloud & In‐
+fra Architec‐
+ture
+Provide the compute
+topology the rest of
+the system runs on.
+GPU node pools for Mod‐
+ules ②/⑨/⑯; CPU pools
+for API/graph/dashboard
+services; CDN for video
+replay assets.
+GPU quota contention
+between live-match in‐
+ference and batch re‐
+search workloads.
+⑮ Database Ar‐
+chitecture
+Polyglot persistence
+— the right store for
+each access pattern,
+not one database for
+everything.
+PostgreSQL (relational/
+match metadata); Redis
+(cache); Qdrant/Milvus
+(vectors — memory &
+RAG); Neo4j (graph);
+MinIO/S3 (raw video,
+model artefacts).
+Cross-store consistency
+lag (e.g. graph updated
+before vector index re‐
+fresh) during live inges‐
+tion.
+⑯ GPU Pipeline
+& Distributed
+Computing
+Serve CV, world-mod‐
+el, and LLM infer‐
+ence at both batch
+(research) and low-
+latency (live) profiles.
+Batched offline inference
+for post-match analysis;
+dedicated low-latency
+pool for live tracking and
+dashboard queries.
+Head-of-line blocking if
+batch and live work‐
+loads share a queue
+without priority separ‐
+ation.
+⑰ CI/CD Ship changes to any
+of the twenty mod‐
+ules safely and inde‐
+pendently.
+GitHub Actions; per-mod‐
+ule test suites; canary de‐
+ploys for model-serving
+changes given their high‐
+er regression risk.
+Silent model-quality re‐
+gression that passes
+unit tests but degrades
+Domino Moment preci‐
+sion — needs model-
+specific eval gates, not
+just code tests.
+⑱ Monitoring,
+Logging & Ob‐
+servability
+Make failure modes
+listed throughout this
+Part actually visible
+in production.
+Structured logging per
+module; latency/error
+dashboards; model-qual‐
+ity drift dashboards dis‐
+tinct from infra dash‐
+boards.
+Infra-only observability
+that stays green while
+causal-output quality
+silently degrades.
+⑲ Security &
+Authentication
+Protect club data,
+video rights, and tac‐
+tical intelligence that
+OAuth2/OIDC for club
+and staff accounts; per-
+club data isolation; row/
+graph-level access con‐
+Over-broad access
+scopes in early proto‐
+types carried forward
+PART IV — SOFTWARE ARCHITECTURE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+34
+
+## Page 35
+
+is, by nature, com‐
+mercially sensitive.
+trol for cross-club deploy‐
+ments.
+unreviewed into pro‐
+duction.
+⑳ Data Ver‐
+sioning & Mod‐
+el Registry
+Make every Domino
+Moment ranking re‐
+producible against
+the exact model and
+data version that pro‐
+duced it.
+DVC for tracking-data
+and labelled-phase data‐
+sets; MLflow model re‐
+gistry; Weights & Biases
+for experiment tracking.
+Unversioned "quick fix"
+model swaps in produc‐
+tion breaking
+reproducibility of past
+reports.
+4.6Cross‐Cutting Concerns
+Three concerns recur across every module above rather than belonging to any one of
+them. Latency budgets differ by an order of magnitude between live and post-match
+use — live tracking tolerates hundreds of milliseconds, post-match Domino Moment ana‐
+lysis can reasonably take minutes, and the architecture is built around that split rather
+than forcing one latency target on every module.  Confidence must propagate, not just
+conclusions — a low-confidence pose estimate should attenuate downstream causal-influ‐
+ence confidence, not silently disappear into a point estimate; this is why every module's
+output schema (Part XV, §15.3) carries a confidence field alongside its value. Every module
+is independently testable against a frozen match corpus — a regression in Module ⑤'s
+phase classification should be catchable before it ever reaches Module ⑧, which is the
+practical justification for the microservice boundaries drawn in §4.5 rather than a single
+monolithic inference pipeline.
+
+4.7Tier-1 Enterprise Extension Modules (Modules ㉑–㉗)
+To meet the operational requirements of elite clubs (e.g. Arsenal, Bayern Munich, Manchester City), the core 20-module pipeline is augmented with seven dedicated enterprise subsystems addressing workflows in the video room, dead-ball coaching, sports science telemetry, and tactile war-room simulation.
+
+㉑ Set-Piece Causal Engine REASONING & DEAD-BALL
+PURPOSE Model, evaluate, and counterfactually simulate set-piece sequences (corners, wide/direct free-kicks, throw-ins), which account for 30–35% of all top-tier goals.
+RESPONSIBILITIES Dead-ball phase segmentation; inswing/outswing aerodynamic trajectory fitting; 6-yard box clustering and screening/pick detection; zonal vs man-marking assignment resolution; counterfactual delivery and blocker position rollouts.
+INPUTS High-resolution calibrated tracking frames during dead-ball phases; referee whistle timestamps; ball 3D coordinates.
+OUTPUTS Set-piece causal graph; screening effectiveness scores; counterfactual delivery distribution (e.g. outswing vs inswing xG delta).
+INTERNAL ALGORITHMS
+Magnus-effect aerodynamic trajectory modeling; temporal contact graph for screening detection; Monte Carlo aerial contest simulation based on player reach and jump height.
+DEPENDENCIES Modules ②, ③, ⑨; physical dimension tables.
+FAILURE MODES Extreme visual occlusion in crowded 6-yard box scrums; unpredictable deflections off multiple bodies.
+SCALABILITY Low computational footprint per match due to sparse dead-ball occurrences (~10–15 per match); parallelizable across historical match databases.
+FUTURE IMPROVEMENTS
+Automated routine fingerprinting to cluster recurring training-ground set-piece choreographies across Europe.
+
+㉒ Biomechanical & Physical Telemetry Fusion Engine SPORTS SCIENCE & LOAD
+PURPOSE Cross-reference tactical decision-making and structural breakdowns with high-frequency GPS physical load telemetry.
+RESPONSIBILITIES Ingest 10–20 Hz GPS/GNSS data from Catapult OpenField, STATSports Sonra, and Apex; synchronize telemetry timestamps with match video clock; compute dynamic cognitive-physical fatigue degradation curves; model fatigue-induced closing latency.
+INPUTS Raw vendor GPS/GNSS streams (speed, acceleration, heart rate, metabolic power); WorldState stream from Module ③.
+OUTPUTS Telemetry-annotated St; player fatigue index; real-time tactical breakdown risk alerts; substitution recommendations.
+INTERNAL ALGORITHMS
+Dynamic time warping (DTW) for video-GPS alignment; exponential decay curves for sprint capacity depletion; multi-variate regression correlating accumulated high-speed running (HSR) with tactical decision latency.
+DEPENDENCIES Module ③; vendor GPS CSV/API connectors.
+FAILURE MODES Clock drift between video PTS and wearable GPS hardware; missing sensor telemetry packets during indoor or stadium interference.
+SCALABILITY Streaming ingestion handles 22+ players at 20 Hz with minimal CPU overhead.
+FUTURE IMPROVEMENTS
+Integration with computer-vision-based markerless fatigue estimation when wearable GPS data is inaccessible (e.g. opponent players).
+
+㉓ Hudl Sportscode & Video Integration Bridge WORKFLOW INTEGRATION
+PURPOSE Seamlessly export FCIE causal insights, Domino Moments, and phase markers into standard video analyst suites (Hudl Sportscode, Catapult Thunder).
+RESPONSIBILITIES Generate Sportscode Open Exchange XML schemas; populate code matrix instances with causal metadata; inject pre-roll and post-roll video margins; handle bi-directional analyst feedback imports.
+INPUTS Domino Moments from Module ⑧; tactical phase events from Module ⑤; video stream timestamps.
+OUTPUTS Sportscode XML timeline packages; EDL (Edit Decision List) video edit sequences; interactive movie package links.
+INTERNAL ALGORITHMS
+Automated instance boundary optimizer; XML schema compliance serializer; PTS-to-timecode converter.
+DEPENDENCIES Module ⑧; local storage.
+FAILURE MODES Timecode drift between multiple unsynchronized broadcast feeds; version mismatches with proprietary Sportscode XML parser updates.
+SCALABILITY Near-instantaneous export (< 1 second to serialize an entire match timeline).
+FUTURE IMPROVEMENTS
+Direct live API integration with Hudl Sportscode v12+ live capture streams for in-match bench analysis.
+
+㉔ Interactive Tactile War-Room Sandbox INTERFACE & SIMULATION
+PURPOSE Provide an ultra-responsive, touch-based iPad canvas for managers and analysts to interactively perturb player positions and view instant counterfactual rollouts.
+RESPONSIBILITIES WebGPU client-side pitch rendering at 60+ FPS; touch drag-and-drop gesture translation to do(vi = [x', y']) causal interventions; local sub-50ms pitch control re-solving; streaming GPU rollout visualization.
+INPUTS Touch drag coordinates; frozen match state St; candidate alternative actions.
+OUTPUTS Live recalculating pitch-control contours; streaming ghost trajectories; real-time xG conceded/created risk deltas.
+INTERNAL ALGORITHMS
+WebAssembly/WebGPU vectorized pitch control re-solver; low-latency binary WebSocket streaming; client-side Hermite spline interpolation for smooth ghost trails.
+DEPENDENCIES Module ④; Module ⑨; high-speed local network / WebSocket server.
+FAILURE MODES Network latency spikes delaying rollout playback; impossible player displacements violating kinematic constraints.
+SCALABILITY Edge-optimized WebAssembly computes local control contours on-device; cloud/local GPU server only invoked for multi-agent rollouts.
+FUTURE IMPROVEMENTS
+Haptic feedback on Apple Pencil / iPad Pro indicating structural tension and high-pressure defensive boundaries.
+
+㉕ Automated Opponent Vulnerability & Red-Teaming Engine SCOUTING & OPPOSITION
+PURPOSE Mine historical match databases to automatically generate comprehensive pre-match opposition exploitation dossiers and pressing-trigger failure maps.
+RESPONSIBILITIES Historical match clustering over opponent's past 12 months; automated pressing-trigger vulnerability identification; individual player weak-foot pressure failure profiling; generation of 3-minute pre-match video briefings.
+INPUTS Multi-match historical WorldState database; opponent match footage; lineup projections.
+OUTPUTS Pre-match Red-Teaming Dossier; automated video highlight reel with visual pitch overlays; pressing trap recommendation guidelines.
+INTERNAL ALGORITHMS
+Hierarchical spatial clustering of turnover coordinates; conditional probability density estimation of turnover under pressure; automated FFmpeg video compilation with graphical arrow overlays.
+DEPENDENCIES Modules ⑦, ⑧, ⑩; historical match repository.
+FAILURE MODES Opponent tactical drift (e.g. manager change or radical tactical system shift rendering historical tendencies obsolete).
+SCALABILITY Batch job executes offline prior to matchday; results cached in PostgreSQL and object storage.
+FUTURE IMPROVEMENTS
+Tactical transferability modeling estimating how opponent will adapt specifically against your team's distinct stylistic profile.
+
+㉖ Micro-Clip Player Meeting Generator COACHING & PLAYER DEVELOPMENT
+PURPOSE Automatically render 15-to-90 second personalized video briefings for individual player tablets, illustrating turning points and ghost-trail alternatives with zero jargon.
+RESPONSIBILITIES Isolate player-specific Domino Moments; render multi-angle frozen spotlights and semi-transparent ghost trajectories; synthesize concise voiceover and subtitle coaching directives; distribute to mobile endpoints.
+INPUTS Player ID; match Domino Moments; video clips; Coach AI generation engine.
+OUTPUTS Mobile-optimized MP4 video clips with embedded ghost overlays; push notification payload to player mobile apps.
+INTERNAL ALGORITHMS
+Headless FFmpeg compositing with dynamic SVG/canvas overlays; text-to-speech / formatted text synthesis with pedagogical constraint checking.
+DEPENDENCIES Modules ⑧, ⑨, ⑩; media transcoding worker.
+FAILURE MODES Cluttered visual overlays confusing players; overly critical or unconstructive tone in automated language generation.
+SCALABILITY Parallel video rendering scales linearly across available worker threads; 25 player clips generated in < 5 minutes.
+FUTURE IMPROVEMENTS
+Interactive player quiz mode where player taps on tablet to choose the correct decision before the ghost trail reveals the optimal solution.
+
+㉗ Sovereign Air-Gapped & Club-Isolated Security Architecture PLATFORM & COMPLIANCE
+PURPOSE Guarantee absolute data sovereignty, zero proprietary leak risk, and complete operational autonomy for Tier-1 clubs.
+RESPONSIBILITIES Air-gapped on-premises appliance deployment; zero-knowledge cryptographic tenant isolation; hardware security module (HSM) key management; immutable access and query audit trails.
+INPUTS Club video footage, GPS telemetry, scouting targets, strategic gameplans.
+OUTPUTS Hardened, isolated deployment with zero outbound network telemetry; compliance audit logs.
+INTERNAL ALGORITHMS
+AES-256 GCM encryption at rest; TLS 1.3 with mutual certificate authentication (mTLS); append-only cryptographic audit logs.
+DEPENDENCIES Local GPU appliance (e.g. 2x NVIDIA A6000 / H100); local Docker/MicroK8s cluster.
+FAILURE MODES Local hardware failure without automated cloud failover; manual air-gapped update bundle desynchronization.
+SCALABILITY Appliance sized to club match and training volume; horizontally expandable via local network nodes.
+FUTURE IMPROVEMENTS
+Federated learning across consenting partner clubs enabling shared model weights without sharing proprietary raw video or tactical telemetry.
+
+PART IV — SOFTWARE ARCHITECTURE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+35
+
+## Page 36
+
+V
+PART FIVE
+Artificial Intelligence
+Every model family in the stack, and the specific reason it was chosen over the
+nearest alternative — because "we used a transformer" is not an architectural jus‐
+tification.
+— 5.1 Computer Vision Models
+— 5.2 Sequence & Attention Models
+— 5.3 Graph Neural Networks
+— 5.4 Language Models
+— 5.5 Multi-Agent & Agentic AI
+— 5.6 World Models
+— 5.7 Reinforcement Learning
+— 5.8 Self-Supervised & Representation Learning
+
+## Page 37
+
+T
+he model choices below are deliberately conservative where conservatism
+is warranted — production tracking cannot run on unproven architec‐
+tures — and deliberately ambitious in the reasoning core, where the whole
+point of FCIE is to attempt something existing tools do not.
+5.1Computer Vision Models
+Table 5.1 — Vision task, model family, and rationale
+Task Model family Why chosen over the alternative
+Object de‐
+tection
+YOLOv11 / RT-
+DETR
+Real-time throughput at the scale of full-match batch pro‐
+cessing; strong small-object recall, which matters because a
+far-side player at broadcast resolution is a handful of pixels.
+Two-stage detectors (Faster R-CNN) are more accurate per-
+frame but too slow to run across every frame of every
+match economically.
+Tracking ByteTrack /
+StrongSORT
+Associates low-confidence detections instead of discarding
+them — critical in penalty-box pile-ups where players are
+partially occluded on nearly every frame. Simpler trackers
+(vanilla DeepSORT) lose identity precisely in the crowded
+moments that matter most for Domino Moment analysis.
+Pose estima‐
+tion
+MediaPipe / HR‐
+Net-family
+Body and head orientation feed directly into Cognitive Load
+(§2.10) and Information Flow (§2.9) — without pose, FCIE
+cannot distinguish "he didn't see the option" from "he saw it
+and chose otherwise," a distinction coaches care about a
+great deal.
+Action re‐
+cognition
+Temporal video
+classifiers (Slow‐
+Fast/TimeSformer-
+style)
+Used as an independent corroborating signal for event la‐
+bels inferred from state transitions (§2.1) — a redundant
+channel that lets Part VI's evaluation protocol (§6.6) check
+state-transition-derived events against a second,
+independent method.
+5.2Sequence & Attention Models
+Transformers are the default choice for any FCIE component that consumes a sequence of
+tactical states, for two reasons beyond general popularity. First, attention handles variable-
+length, long-range dependency naturally — exactly the non-Markovian requirement estab‐
+lished in §2.4. Second, and more specific to this project, attention weights double as an im‐
+perfect  but  genuinely  useful  attribution  signal:  a  decision  point  the  model  attends  to
+PART V — ARTIFICIAL INTELLIGENCE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+37
+
+## Page 38
+
+strongly when predicting a later state is a reasonable prior for where to look for a Domino
+Moment, feeding directly into Part VI's attention-attribution detection method (§6.4.1). The
+known weakness — quadratic cost in sequence length — is handled with hierarchical at‐
+tention:  frame-level  attention  within  a  tactical  phase,  phase-level  attention  across  the
+match, rather than flat attention over ninety minutes of raw frames.
+5.3Graph Neural Networks
+A football team is not well described as a sequence — it is eleven simultaneously interact‐
+ing agents, which is a graph, not a list. GNNs are the model class built for exactly that: local
+message-passing between players (proximity edges, marking edges, passing-lane edges)
+that produces emergent global structure through iterated local updates — the same emer‐
+gence  described  conceptually  in  Collective  Intelligence  (§2.8).  Message-passing  at  each
+timestep  produces  player-level  embeddings  consumed  both  by  Tactical  Understanding
+(Module  ⑤)  and  by  the  graph-reasoning  layer  described  in  Part  VIII  (§8.5).  Temporal
+GNNs extend this by letting the graph's own topology evolve over time — edges appearing
+and disappearing as marking assignments and passing lanes change — which is a more
+faithful model of a press trap forming than a fixed-topology graph with time-varying node
+features would be.
+5.4Language Models
+FCIE deliberately targets locally-hosted, open-weight models (the Llama, Qwen, and Mis‐
+tral families) for the Football LLM layer rather than a closed third-party API, for four con‐
+crete reasons: full control over fine-tuning toward football-specific tactical vocabulary; on-
+premise deployment, which matters to clubs unwilling to send proprietary tactical data to
+an external API; predictable cost at the query volume a live coach-assistant implies; and
+tight, low-latency function-calling into Modules ⑦–⑨ for retrieval-grounded generation.
+HONEST TRADE‐OFF
+Open-weight models generally lag frontier closed models on raw general-reasoning
+benchmarks. FCIE's bet is that narrow domain grounding — retrieval-augmented
+generation over a purpose-built football knowledge graph — closes most of the
+practically relevant gap for this specific task, and that the control, latency, and cost
+advantages dominate for a production coaching tool. This is a bet, not a settled fact,
+and it is worth re-evaluating as both open- and closed-model capability shifts over
+the life of the project.
+PART V — ARTIFICIAL INTELLIGENCE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+38
+
+## Page 39
+
+5.5Multi‐Agent Systems & Agentic AI
+Rather than one monolithic model attempting perception, reasoning, and explanation to‐
+gether , FCIE's Part IV modules are effectively specialised agents — a Vision Agent, a Space
+Agent, a Tactical Agent, a Causal Agent, a Knowledge Agent, and a Coach Agent — coordin‐
+ated by a lightweight orchestration layer rather than fused into a single set of weights. This
+mirrors the microservice boundaries of Part IV for a reason: it lets each agent be evalu‐
+ated, improved, and even replaced independently, and it lets the Coach Agent (the LLM lay‐
+er) call the other agents as tools — requesting a counterfactual simulation, querying the
+graph — instead of trying to encode every capability directly in its own weights. A coach's
+natural-language question is routed to the relevant agent(s), their outputs are aggregated,
+and the Coach Agent synthesises a final answer that cites which agent supplied which
+piece of evidence.
+5.6World Models
+A world model, in FCIE's usage, is a learned function that predicts how the match state
+evolves — a latent encoding of St into a tractable rollout space, learned transition dynam‐
+ics over that latent space, and a decoder back into an interpretable state (and, eventually, a
+video  overlay).  This  is  the  literal  mechanism  behind  the  phrase  "what  happens  next":
+without a world model, counterfactual estimation (Part VII) has no way to simulate for‐
+ward from a perturbed state and can only fall back on matching against historically simil‐
+ar situations, which Part VII treats as a complementary check rather than a sufficient
+method on its own.
+5.7Reinforcement Learning
+Flagged explicitly as future and comparatively low-maturity within the roadmap (Part XI).
+Two applications are envisioned: training realistic opponent-adaptation policies via multi-
+agent RL to replace today's heuristic adaptation model inside the Counterfactual Simulator
+(Module ⑨); and, more speculatively, framing training-recommendation generation as a
+sequential decision problem — which drills, in which order , close a team's measured tactic‐
+al  weaknesses  fastest.  The  second  is  closer  to  a  research  direction  than  a  near-term
+deliverable and is treated as such throughout this document.
+PART V — ARTIFICIAL INTELLIGENCE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+39
+
+## Page 40
+
+5.8Self‐Supervised & Representation Learning
+Labelled tactical data — phase tags, expert-confirmed Domino Moment ground truth — is
+scarce and expensive, requiring analyst time that does not scale. Broadcast video, by con‐
+trast, is abundant. FCIE therefore leans on self-supervised pretraining wherever possible:
+masked future-state prediction (predict a withheld span of St from its surrounding context,
+a world-model-adjacent objective) and contrastive learning of player and play-style em‐
+beddings, which pulls together augmented views of the same player or passage of play and
+pushes  apart  different  ones.  These  embeddings  are  the  practical  mechanism  behind
+Hidden Tactical Structures' latent variable Zt (§2.15), and they double as reusable player-
+style representations for scouting and recruitment use cases described in Part X.
+PART V — ARTIFICIAL INTELLIGENCE FOOTBALL CAUSAL INTELLIGENCE ENGINE
+40
+
+## Page 41
+
+VI
+PART SIX · CORE
+Domino Moment Detection
+The problem the rest of the system exists to serve. Five candidate algorithms, an
+honest account of why none of them is sufficient alone, and the evaluation protocol
+that decides whether any of this actually works.
+— 6.1 Formal Definitions
+— 6.2 Influence
+— 6.3 Importance
+— 6.4 Detection Algorithms
+— 6.5 Limitations
+— 6.6 Evaluation Metrics
+
+## Page 42
+
+S
+ection 2.5 introduced the Domino Moment conceptually. This Part treats it
+as a research problem: what, precisely, would it mean to detect one cor‐
+rectly, how might FCIE attempt it, and — stated as plainly as the rest of this doc‐
+ument tries to state everything — why is this genuinely hard in a way that no
+single clever algorithm resolves.
+6.1Formal Definitions
+CAUSE, EFFECT, STATE CHANGE
+Within a Decision Chain D (§2.12), a node vi is a candidate cause of a downstream
+effect y if intervening on vi changes the distribution of y. A  state change is any
+transition St → St+1 whose tactical abstraction τ crosses a meaningful boundary —
+a phase change, a control-field inversion, a sharp drop in tactical entropy (§2.11).
+A Domino Moment, restated formally, is a decision node v* ∈ D that is (a) a genuine cause
+of a materially different downstream outcome under a plausible counterfactual, and (b)
+minimal — no earlier node in the same chain has comparable causal influence on the
+same outcome. Clause (b) is what makes detection hard: it is not enough to find a cause,
+the system has to find the  earliest non-trivial one, which requires comparing influence
+across every candidate node in the chain, not just the one immediately preceding the out‐
+come.
+6.2Influence
+Influence quantifies the causal effect size of a candidate decision node on a downstream
+outcome indicator:
+I(vi) = | P( G | do(vi = a) ) − P( G | do(vi = a′) ) |
+where G is a downstream outcome indicator (goal, shot, regain, final-third entry within a horizon of N
+seconds), a is the observed action at vi, and a′ is a plausible counterfactual alternative supplied by the
+Counterfactual Simulator (Part VII).
+I(vi) is estimated, never observed directly — this is the fundamental problem of causal in‐
+ference (§6.5) applied to football, and every algorithm in §6.4 is, underneath its specific
+mechanism, a different strategy for estimating this one quantity under different assump‐
+tions.
+PART VI — DOMINO MOMENT DETECTION FOOTBALL CAUSAL INTELLIGENCE ENGINE
+42
+
+## Page 43
+
+6.3Importance
+Influence alone is not quite the ranking FCIE wants to surface to a coach — a high-influ‐
+ence action that was the only realistic option available is less interesting than a high-influ‐
+ence action that required real skill or risk to execute. Importance combines influence with
+two further terms:
+Importance(vi) = I(vi) · Rarity(vi) · Reversibility(vi)
+Rarity: how unlikely a′ was to be chosen instead, given the option set Λt (a genuinely difficult decision
+scores higher than an obvious one). Reversibility-1 weighting: how hard the resulting state would have
+been to recover from — an irreversible territorial concession is weighted above a transient one.
+This is the score the ranked Domino Moment list (Module ⑧ output) is sorted by, and it is
+deliberately kept as an interpretable product of three named terms rather than a learned
+black-box scalar , so that a coach questioning a ranking can be shown which term drove it.
+6.4Detection Algorithms
+No single method below is treated as "the" answer . FCIE runs an ensemble and treats dis‐
+agreement between methods as a genuinely useful signal — a candidate that scores highly
+under  only  one  method  is  a  weaker  claim  than  one  multiple  independent  methods
+converge on.
+6.4.1Attention Attribution
+The temporal transformer used for tactical-phase classification (Part V, §5.2) produces at‐
+tention weights over the input sequence as a side effect of its primary task. Decision nodes
+that receive disproportionate attention when the model predicts a later high-value state
+are treated as candidates. Strength: free — no additional model needed. Weakness: atten‐
+tion is a correlate of predictive relevance, not a causal quantity; it is used here strictly as a
+candidate-generation prior , never as the final influence estimate.
+6.4.2Causal Shapley Attribution
+Adapts  Shapley-value  credit  assignment  —  familiar  from  VAEP-style  possession-value
+models — but computes marginal contribution over counterfactual continuations supplied
+by Module ⑨, rather than over historical action-value averages. Strength: principled, ad‐
+ditive  credit  assignment  with  well-understood  axioms.  Weakness: combinatorial  cost
+grows quickly with chain length, requiring sampling approximations that trade exactness
+for tractability.
+PART VI — DOMINO MOMENT DETECTION FOOTBALL CAUSAL INTELLIGENCE ENGINE
+43
+
+## Page 44
+
+6.4.3Counterfactual World‐Model Rollout Comparison
+Directly implements the Influence definition in §6.2: perturb St at vi, roll forward with the
+world  model  (Part  V,  §5.6)  under  both  the  observed  and  counterfactual  action,  and
+compare the resulting outcome distributions. Strength: the most direct estimate of the ac‐
+tual quantity of interest. Weakness: inherits every limitation of the world model itself, in‐
+cluding the sim-to-real gap discussed in §6.5 and Part XIV.
+6.4.4Graph Influence Propagation
+Treats the Decision Chain as a weighted graph and propagates an outcome "importance
+signal" backward from the terminal event (goal, shot) toward earlier nodes, similarly in
+spirit  to  PageRank-style  diffusion.  Strength: computationally  cheap,  naturally  handles
+chains with branching (a possession that could plausibly have led to more than one type of
+outcome). Weakness: propagation weights must themselves be learned or heuristically set,
+and a poor choice here silently reintroduces the correlation-not-causation problem this
+whole Part exists to avoid.
+6.4.5T emporal Granger‐Inspired Discovery
+Borrows the logic of Granger causality — does including vi's history improve prediction of
+the outcome beyond what the outcome's own history and confounding context already ex‐
+plain — adapted to the graph-structured, non-stationary setting of a football match rather
+than classical stationary time series. Strength: a useful sanity check that is largely inde‐
+pendent in its assumptions from §6.4.1–6.4.3, making it a good ensemble member . Weak‐
+ness: classical Granger causality is well known to be confounded by omitted common
+causes, and football's context variables (game state, fatigue, opponent adjustments) are
+exactly the kind of common cause that requires deliberate control.
+6.5Limitations
+These  are  stated  directly  because  a  research  vision  document  that  hides  its  hardest
+problems is not a credible one.
+The fundamental problem of causal inference. For any single real decision point, the
+world in which the counterfactual action was taken is never observed — only estim‐
+ated. No algorithm in §6.4 escapes this; each just estimates it differently, with different,
+non-overlapping assumptions.
+Confounding. Opponent quality, game state, fatigue, and weather all influence both the
+decision taken and the outcome, and must be explicitly controlled for or the influence
+estimate is biased — often in a direction that flatters the "obvious" hero moment over
+the true earliest cause.
+• 
+• 
+PART VI — DOMINO MOMENT DETECTION FOOTBALL CAUSAL INTELLIGENCE ENGINE
+44
+
+## Page 45
+
+Small sample size per match. A single fixture offers one realisation of the causal pro‐
+cess; robust estimation requires pooling across many matches and situations, which in‐
+troduces its own risk of averaging away genuinely context-specific effects.
+Non-stationarity. A pressing trap that worked in August, once opponents adjust, stops
+working by November — tactical causal effects are not fixed population parameters,
+they drift as the league adapts, and any static model will go stale.
+Ground-truth scarcity. There is no large, agreed-upon labelled dataset of "true" Dom‐
+ino Moments to train or validate against; §6.6 addresses how FCIE proposes to work
+around this, but it does not fully solve it.
+6.6Evaluation Metrics
+Table 6.1 — Proposed evaluation protocol for Domino Moment detection
+Metric What it measures
+Expert agreement (inter-
+rater)
+Do independent UEFA-licensed analysts, shown candidate Domino
+Moments blind to the algorithm's ranking, agree with the system's
+top-ranked candidate more often than with each other's second
+choices?
+Counterfactual consistencyDo repeated simulator rollouts (Module ⑨) from the same perturbed
+state converge to a stable outcome distribution, or does variance
+swamp the signal?
+Downstream predictive liftDoes knowing the top-ranked Domino Moment improve prediction
+of the eventual possession outcome beyond what the terminal action
+(the shot, the assist) alone already predicts?
+Retrospective turning-
+point validation
+Where independently published post-match analysis identifies a
+"turning point" in prose, does FCIE's ranked list place a semantically
+matching candidate near the top?
+Cross-method convergenceWhat fraction of top-5 candidates are agreed upon by at least three
+of the five algorithms in §6.4, used as an internal confidence signal
+surfaced to the coach alongside the ranking.
+• 
+• 
+• 
+PART VI — DOMINO MOMENT DETECTION FOOTBALL CAUSAL INTELLIGENCE ENGINE
+45
+
+## Page 46
+
+VII
+PART SEVEN · CORE
+Counterfactual Football
+A complete framework for "what if this never happened" — how to formalise the
+question, how to simulate an answer , and how confident FCIE should ever really be
+in that answer .
+— 7.1 The Framework
+— 7.2 Estimation Approaches
+— 7.3 Simulation Design
+— 7.4 From Simulation to Causal Importance
+— 7.5 Research Directions
+
+## Page 47
+
+P
+art VI treated the counterfactual estimate as an input the Causal Reason‐
+ing Engine consumes. This Part is about where that input actually comes
+from: the machinery that has to exist for "what if it never happened" to be more
+than a rhetorical question.
+7.1The Framework
+FCIE formalises the counterfactual query using a structural causal model over the Decision
+Chain (§2.12, §2.13). For a decision node vi with observed action a, the counterfactual asks
+for  the  distribution  of  the  outcome  under  an  intervention  that  replaces  a  with  an
+alternative a′, holding everything upstream of vi fixed:
+P( Y | do(vi ← a′), S<t = observed )
+Y is the downstream outcome variable; S<t is the observed match state up to the point of intervention,
+held fixed — only the single decision is perturbed, not the entire history leading to it.
+Two design choices here are load-bearing. First, only the decision itself is perturbed — not
+the state that produced it — which keeps the counterfactual "close" to the real match
+rather than drifting into an unrelated hypothetical scenario. Second, and more subtly, the
+opponent's response after the intervention is not held fixed at its observed value — an op‐
+ponent who sees a different pass will react differently, and pretending otherwise (a com‐
+mon simplification in naive counterfactual sports analysis) systematically overstates how
+much space an alternative action would actually have found. §7.3 addresses how FCIE
+attempts to model that adaptation rather than assume it away.
+7.2Estimation Approaches
+Table 7.1 — Three complementary estimation strategies
+PART VII — COUNTERFACTUAL FOOTBALL FOOTBALL CAUSAL INTELLIGENCE ENGINE
+47
+
+## Page 48
+
+Approach Mechanism Best used when
+Learned world-
+model rollout
+Perturb St, roll forward under the
+learned transition model (Part V,
+§5.6) for a fixed horizon, read off
+the resulting outcome distribution.
+The decision point is well within
+the model's training distribution
+— common tactical situations, not
+extreme edge cases.
+Matching / synthet‐
+ic control
+Search the historical corpus for situ‐
+ations with near-identical St where
+the alternative action a′ actually oc‐
+curred, and use the empirical out‐
+come distribution from those
+matches.
+The situation is common enough
+that good historical matches exist
+— a natural check on rollout-
+based estimates, and a fallback
+when the world model is asked to
+extrapolate too far .
+Generative traject‐
+ory sampling
+A generative model (diffusion- or
+VAE-style) samples multiple plaus‐
+ible alternative continuations rather
+than a single rollout, giving a distri‐
+bution over outcomes rather than a
+point estimate.
+The decision point is genuinely
+high-variance — several qualitat‐
+ively different continuations are
+all plausible, and collapsing to one
+rollout would understate real un‐
+certainty.
+FCIE does not pick one of these permanently. Rollout-based and matching-based estimates
+are compared as a built-in consistency check (§6.6); large disagreement between them is it‐
+self reported to the coach as a signal that the counterfactual claim is less certain than
+usual,  rather  than  being  silently  resolved  by  picking  whichever  number  the  system
+happened to compute first.
+7.3Simulation Design
+The rollout mechanism inside the Counterfactual Simulator (Module ⑨) combines a phys‐
+ics-informed layer for the ball and player kinematics — trajectories must obey basic con‐
+straints on speed, acceleration, and ball flight that a purely learned model can violate if
+left unconstrained — with learned agent policies for decision-making layered on top. Op‐
+ponent adaptation is modelled explicitly rather than assumed away: the eleven opposing
+agents in a rollout follow a learned reactive policy conditioned on the perturbed state, not
+a replay of their observed actions in the real, unperturbed match. Today this reactive
+policy is a heuristic model calibrated against aggregate team-level tendencies (how quickly
+this team typically closes down space, how it typically shifts under a switch of play); Part V
+(§5.7) and Part XI mark full multi-agent reinforcement learning-trained opponent policies
+as the natural, and currently unbuilt, successor .
+PART VII — COUNTERFACTUAL FOOTBALL FOOTBALL CAUSAL INTELLIGENCE ENGINE
+48
+
+## Page 49
+
+7.4From Simulation to Causal Importance
+Once a counterfactual outcome distribution exists — by whichever method in §7.2 — it
+plugs directly into the Influence definition from §6.2: the observed outcome distribution
+and the counterfactual outcome distribution are compared, and the divergence between
+them is I(vi). Everything upstream in this Part exists purely to make that one comparison
+trustworthy; everything downstream (Part VI's ranking, Part IX's coach-facing explanation)
+treats it as a given input. Keeping this boundary explicit — simulation produces evidence,
+the  Causal  Reasoning  Engine  interprets  it  —  is  what  allows  the  two  modules  to  be
+developed, tested, and improved independently.
+7.5Research Directions
+Formal uncertainty quantification on counterfactual estimates, surfaced as calibrated
+confidence intervals rather than point scores, so a coach can distinguish "we're fairly
+sure" from "this is our best guess."
+Learned,  rather  than  heuristic,  opponent-adaptation  policies  via  multi-agent
+reinforcement learning, closing the gap identified in §7.3.
+Cross-validation of world-model rollouts against matching-based estimates at scale, to
+characterise systematically where and why the two methods diverge.
+Extending single-decision counterfactuals to multi-decision counterfactual plans ("what
+if  the  whole  build-up  shape  had  been  different"),  which  raises  combinatorial  and
+identifiability challenges not yet addressed by this framework.
+Transfer of the counterfactual framework to other invasion team sports (basketball,
+hockey, rugby) as a test of whether the state-space formalism in Part II is football-
+specific or genuinely general.
+• 
+• 
+• 
+• 
+• 
+PART VII — COUNTERFACTUAL FOOTBALL FOOTBALL CAUSAL INTELLIGENCE ENGINE
+49
+
+## Page 50
+
+VIII
+PART EIGHT
+The Football Knowledge Graph
+The shared substrate everything else in the system reads from and writes to —
+schema, temporal structure, queries, and how it keeps the language layer honest.
+— 8.1 Schema: Nodes & Edges
+— 8.2 T emporal Graph Structure
+— 8.3 Graph Database & Queries
+— 8.4 Graph-Based Reasoning
+— 8.5 Retrieval-Augmented Generation
+— 8.6 LLM Integration
+
+## Page 51
+
+M
+odule ⑦ from Part IV is expanded here into its full schema. Every other
+reasoning and language component in this document ultimately reads
+from, or writes to, this graph — which is precisely why its design receives its
+own Part rather than a paragraph inside the architecture section.
+8.1Schema: Nodes & Edges
+Table 8.1 — Core node types
+Node type Key properties
+Player id, name, role-embedding, team_id, style-embedding (from §5.8
+contrastive representations)
+Team id, name, default-formation-embedding
+Match id, competition, date, score, venue
+TacticalState (τt) timestamp, phase label, entropy H(St), momentum μt
+Space zone-id, control-field snapshot reference, danger-score
+Pass / Action timestamp, from-player , to-player (or null), outcome, information-gain
+IG
+DominoMoment influence score I(vi), importance score, evidence links (video timestamp,
+contributing algorithms from §6.4)
+Coach / Formation metadata nodes supporting scouting and dashboard queries (Part X)
+Table 8.2 — Core edge types
+PART VIII — KNOWLEDGE GRAPH FOOTBALL CAUSAL INTELLIGENCE ENGINE
+51
+
+## Page 52
+
+Edge type Connects Meaning
+created Action → Space The action generated newly dangerous or
+controlled space.
+blocked Player → Passing-
+lane
+A defensive positioning closed off an option in Λt.
+occupied Player → Space Instantaneous pitch-control ownership.
+pressed Player → Player Active defensive pressure, weighted by Πt intens‐
+ity.
+supported Player → Player Off-ball positioning that increased the ball-
+carrier's viable option set.
+enabled DominoMoment →
+Action/Goal
+The causal edge — carries the influence and im‐
+portance scores from Part VI as edge properties.
+8.2T emporal Graph Structure
+Nearly every edge above is time-bound rather than permanent — a pressed relationship
+exists for a few hundred milliseconds, not for the whole match. FCIE versions edges with
+validity intervals [tstart, tend) rather than deleting and recreating nodes, so that a query
+can ask "what did the graph look like at minute 63" and get a coherent historical snapshot,
+not just the current state. This temporal versioning is what makes the graph queryable for
+post-match analysis and not merely a live-state cache.
+8.3Graph Database & Queries
+Neo4j is chosen over a relational or document store specifically because the queries FCIE
+needs are multi-hop traversals — "find the DominoMoment that enabled a goal, then find
+which player's pressed edges were active on the ball-carrier three seconds earlier" —
+which are natural in Cypher and expensive as recursive joins in SQL. A representative
+query, matching the workflow described in the Coach AI example of §9.3:
+PART VIII — KNOWLEDGE GRAPH FOOTBALL CAUSAL INTELLIGENCE ENGINE
+52
+
+## Page 53
+
+Fig. 8.1 — Example Cypher query: top Domino Moments in a match, with the pressing context active at each.
+8.4Graph‐Based Reasoning
+Beyond direct queries, the graph supports multi-hop causal-path reasoning — tracing the
+full  enabled chain backward from a goal to its earliest ancestor Domino Moment, even
+across several intermediate actions. Graph Neural Network embeddings (Part V, §5.3) are
+stored as node properties so that semantic, approximate queries ("find tactical states simil‐
+ar to this one, even if no identical historical match exists") are possible alongside exact
+Cypher traversal, combining symbolic and learned reasoning in the same store rather than
+maintaining them separately.
+8.5Retrieval‐Augmented Generation
+When the Football LLM (Module ⑩) needs evidence for an answer , it does not search raw
+text — it issues a hybrid query against the graph: a symbolic Cypher traversal for structur‐
+al facts (who pressed whom, when) combined with vector similarity search over GNN and
+language  embeddings  for  semantically  related  context  (similar  tactical  situations  else‐
+where in the match, or in the historical corpus). The retrieved subgraph, not a free-text
+summary, is what gets passed into the model's context — which is what allows every claim
+in a generated report to carry a specific, checkable citation back to a graph node.
+8.6LLM Integration
+The design principle carried over from Part I, §1.6 is enforced mechanically here: the Foot‐
+ball LLM is not permitted to assert a causal claim that does not trace to a retrieved Domin‐
+oMoment or enabled edge. This is implemented as a generation constraint — the model is
+prompted and function-call-scaffolded to cite a graph node or video timestamp for every
+tactical claim — rather than as a hope that a sufficiently large model will simply behave. It
+is also the mechanism directly tested by Research Question 5 and Hypothesis 4 in Part III:
+whether grounding measurably reduces unsupported claims relative to an ungrounded
+baseline given the same underlying match.
+MATCH (d:DominoMoment)-[:enabled].>(a:Action)-[:PART_OF].>(m:Match {id: $matchId})
+WHERE d.importance > 0.7
+MATCH (p:Player)-[pr:pressed].>(a)
+WHERE pr.t_start .= d.timestamp .= pr.t_end
+RETURN d, a, p, pr.intensity
+ORDER BY d.importance DESC
+LIMIT 5
+PART VIII — KNOWLEDGE GRAPH FOOTBALL CAUSAL INTELLIGENCE ENGINE
+53
+
+## Page 54
+
+IX
+PART NINE
+Coach AI
+Where every layer of this document converges into a single interaction: a coach
+types a real question, and gets a grounded answer instead of a chart.
+— 9.1 Architecture
+— 9.2 Example Reasoning Flows
+— 9.3 Trust & Explainability Design
+
+## Page 55
+
+C
+oach AI is not a separate model — it is the Football LLM (Module ⑩) oper‐
+ating in an interactive, tool-using mode, orchestrating the other agents de‐
+scribed in Part V, §5.5 in response to a specific question rather than generating a
+fixed post-match report.
+9.1Architecture
+Fig. 9.1 — Coach AI request lifecycle.
+The Intent Parser matters more than it might appear to: a causal question ("why did we
+lose control") routes to the Causal Reasoning Engine and, if the answer requires it, on to
+the Counterfactual Simulator; a purely descriptive question ("how many final-third entries
+did we have") can be answered directly from the Knowledge Graph without invoking
+either . Routing correctly is what keeps expensive counterfactual simulation reserved for
+the questions that actually need it.
+Coach question (natural language)
+        │
+        ▼
+Intent Parser  ──►  classifies question type:
+        │                    causal / comparative / descriptive / recommendation
+        ▼
+Evidence Router ──►  Knowledge Graph query (§8.3)
+        │              ──►  Causal Reasoning Engine query (Part VI)
+        │              ──►  Counterfactual Simulator query (Part VII), if needed
+        ▼
+Evidence Aggregator  (subgraph + scores + video timestamps)
+        │
+        ▼
+Football LLM synthesis  ──►  natural-language answer, every claim cited
+        │
+        ▼
+Coach Dashboard: answer + linked video clip + confidence indicator
+PART IX — COACH AI FOOTBALL CAUSAL INTELLIGENCE ENGINE
+55
+
+## Page 56
+
+9.2Example Reasoning Flows
+"Why did Bayern lose midfield control?" CAUSAL
+ROUTE Knowledge Graph (tactical-state trend) → Causal Reasoning Engine (Domino Moment
+search restricted to the relevant window)
+EVIDENCE
+GATHERED
+τt phase trend showing a sustained drop in midfield pitch-control share; top-ranked
+Domino Moment in the preceding window with its influence score
+ANSWER SHAPE Names the specific state transition, its influence score, the counterfactual comparison
+that supports it, and links the video timestamp — not a possession-percentage chart.
+"What tactical mistake caused this goal?" CAUSAL
+ROUTE Knowledge Graph enabled-edge backward traversal from the goal node (Fig. 8.1 pat‐
+tern) → Counterfactual Simulator for the top candidate
+EVIDENCE
+GATHERED
+The earliest high-importance Domino Moment on the causal chain leading to the
+goal, plus its counterfactual outcome distribution
+ANSWER SHAPE Distinguishes the proximate error (the missed tackle just before the shot) from the
+earlier structural cause (the midfield disconnection three actions earlier) —
+explicitly, since coaches usually want the latter .
+"Which player created the attack?" COMPARATIVE / CAUSAL
+ROUTE Causal Reasoning Engine importance ranking (§6.3) filtered to the possession in ques‐
+tion
+EVIDENCE
+GATHERED
+Per-player importance contribution across all decision nodes in the possession's
+Decision Chain
+ANSWER SHAPE Ranks contributors by importance rather than defaulting to the assist-provider —
+often surfacing an earlier off-ball movement the box score never credits.
+PART IX — COACH AI FOOTBALL CAUSAL INTELLIGENCE ENGINE
+56
+
+## Page 57
+
+9.3Trust & Explainability Design
+Three commitments govern every Coach AI answer , and none of them are negotiable for
+the sake of a smoother-sounding response. First, every tactical claim carries a citation to a
+specific graph node, score, or video timestamp — enforced at generation time (§8.6), not
+hoped for . Second, confidence is always shown alongside the claim, using the cross-method
+convergence signal from §6.6 — a single-algorithm finding is visually and textually distin‐
+guished from one three independent detection methods agree on. Third, when evidence is
+genuinely thin — a rare tactical situation with no good historical matches and high rollout
+variance — Coach AI is designed to say so explicitly rather than produce a confident-
+sounding  answer  anyway,  because  a  wrong  confident  answer  is  more  damaging  to  a
+coaching relationship than an honest "we're not certain here."
+"What should be improved in training?" RECOMMENDATION
+ROUTE Knowledge Graph aggregation across recurring Domino Moment patterns over mul‐
+tiple matches (season-level memory, Part IV §4.2 future improvements)
+EVIDENCE
+GATHERED
+Recurring tactical-state patterns preceding negative-outcome Domino Moments
+across the sample
+ANSWER SHAPE Deliberately the most hedged response type in the system — pattern frequency is re‐
+ported plainly, and any drill suggestion is flagged as a recommendation drawing on
+pattern frequency, not a causal claim with the same evidentiary weight as the other
+three flows.
+PART IX — COACH AI FOOTBALL CAUSAL INTELLIGENCE ENGINE
+57
+
+## Page 58
+
+X
+PART TEN
+Frontend & Dashboards
+Seven different jobs-to-be-done, one underlying evidence graph — the interface
+layer's task is translation, not re-analysis.
+— 10.1 Dashboards by Persona
+— 10.2 Signature UX Patterns
+
+## Page 59
+
+E
+very dashboard below is a different view over the same Knowledge Graph
+and  Causal  Reasoning  Engine  output  (Parts  VI–VIII)  —  built  in  React/
+Next.js/TypeScript per the original architecture sketch, with D3.js and Plotly for
+the analytical views and Three.js reserved for a future 3D replay mode. No per‐
+sona gets a separately computed set of numbers; that consistency is itself a
+design commitment, since disagreeing dashboards across departments erode
+trust in the whole platform faster than any individual UI flaw.
+10.1Dashboards by Persona
+Table 10.1 — Persona, primary job, and one defining feature
+Persona Primary job‐to‐be‐done Defining feature
+Coach Prepare the next training
+session and team talk
+around what actually de‐
+cided the last match.
+Coach AI chat (Part IX) pinned alongside the
+Domino Timeline (§10.2).
+Analyst Interrogate the causal
+chain in detail, export
+evidence, cross-check
+FCIE's ranking against
+manual review.
+Full Cypher query console (§8.3) plus side-by-side
+counterfactual comparison view.
+Sporting
+Director
+Track tactical trends
+across a season and squad,
+not a single match.
+Season-level Domino Moment pattern aggregation
+(the same evidence base Coach AI's training-recom‐
+mendation flow draws on, §9.2).
+Scout Evaluate a prospective
+player's tactical impact,
+not just their raw output.
+Player-level importance-contribution history using
+the style embeddings from §5.8, comparable across
+leagues.
+Medical
+Staff
+Correlate high-load, high-
+pressure situations with
+injury and fatigue risk.
+Cognitive Load (§2.10) and physical-intensity over‐
+lays on the same timeline, without needing tactical-
+analysis expertise to read them.
+Academy Give development-age
+players concrete, positive-
+framed decision-point
+feedback.
+Simplified, non-jargon Domino Moment cards fo‐
+cused on "good decisions under pressure" rather
+than a full causal-importance ranking.
+Recruit‐
+ment
+Compare tactical fit of ex‐
+ternal targets against the
+squad's existing patterns.
+Cross-club style-embedding similarity search
+(graph-federation future improvement, §4.3).
+Set-Piece
+Specialist
+Design, evaluate, and
+counterfactually simulate
+corners, FKs, and throw-ins.
+Screening and block interaction graph, delivery
+aerodynamics rollout, near-post vs far-post xG delta
+calculator (Module ㉑).
+High Per‐
+formance
+Prevent fatigue-induced
+tactical collapse and time
+substitutions.
+10–20 Hz GPS telemetry overlay (Catapult/STATSports),
+cognitive-physical fatigue decay curves, real-time
+substitution risk radar (Module ㉒).
+First-Team
+Player
+Review personalized, bite-
+sized tactical lessons before
+or after training.
+15-to-90 second micro-video player with frozen Domino
+spotlights, animated ghost trails, and zero-jargon
+coaching directives (Module ㉖).
+PART X — FRONTEND & DASHBOARDS FOOTBALL CAUSAL INTELLIGENCE ENGINE
+59
+
+## Page 60
+
+10.2Signature UX Patterns
+Domino Timeline
+A horizontal scrubber across the full ninety minutes, marking only Domino Moments (not
+every event) as weighted ticks — tick height encodes importance. Scrubbing plays syn‐
+chronised canvas animation of the tracked positions alongside the broadcast video, so a
+coach can watch the actual spatial pattern that the causal engine flagged, not just read a
+score.
+
+Interactive Tactile War-Room Canvas (iPad Sandbox)
+A 60+ FPS WebGPU-accelerated pitch canvas designed for tactile tablet manipulation (Module ㉔).
+Coaches and analysts tap and drag any player node at a frozen timestamp; continuous pitch-
+control contours, passing lanes, and dangerous space recalculate locally in sub-50ms real time.
+Releasing the node triggers an instantaneous WebSocket rollout request streaming animated
+ghost-trail trajectories directly back to the canvas within 1.5 seconds.
+
+One-Click Sportscode XML & Video Suite Export
+A persistent export utility providing seamless bi-directional integration with Hudl Sportscode,
+Catapult Thunder, and professional video suites (Module ㉓). Generates compliant Sportscode XML
+instances with pre-roll and post-roll video margins, encoding causal metadata, importance rankings,
+and counterfactual deltas directly into the analyst's native movie timeline.
+
+Automated Opponent Red-Teaming Dossier
+A single-click pre-match scouting dossier that synthesizes historical match databases into an
+executable tactical exploitation plan (Module ㉕). Identifies the exact pressing-trigger collapse
+patterns and weak-foot turnover vulnerabilities of the upcoming opponent, accompanied by an
+automated 3-minute video highlight reel with graphical pitch overlays.
+
+Counterfactual Ghost Trail
+Overlaid on the same canvas: a translucent "ghost" trajectory showing the simulator's es‐
+timate of where the ball and key players would plausibly have gone under the counterfac‐
+tual action (Part VII), rendered alongside the real trajectory in a different colour . This is the
+single UI element most directly responsible for making causal claims feel concrete rather
+than abstract — seeing the alternative, not just reading its probability, is what earns trust
+from a sceptical coaching staff.
+Natural‐Language Search
+A persistent search bar , available on every dashboard, that routes through the same Intent
+Parser described in Part IX rather than a separate keyword search — "show me every time
+we got pressed into a turnover in our own half" is answered with actual graph traversal,
+not a fuzzy text match over commentary.
+PART X — FRONTEND & DASHBOARDS FOOTBALL CAUSAL INTELLIGENCE ENGINE
+60
+
+## Page 61
+
+XI
+PART ELEVEN
+Research Roadmap
+Five years, nine engineering phases, and a deliberate refusal to skip to the
+interesting part before the foundation exists to support it.
+— 11.1 Roadmap Philosophy
+— 11.2 Year-by-Year Plan
+
+## Page 62
+
+A
+n earlier working document proposed treating this project as a staged,
+multi-year curriculum rather than a single sprint — building the underly‐
+ing knowledge (mathematics, systems architecture, football theory) before at‐
+tempting the research contributions that depend on it. That instinct was correct,
+and this roadmap keeps it: the nine engineering phases from the original archi‐
+tecture sketch are mapped onto a five-year arc, each year producing both a
+working software increment and a publishable research artefact, so that engin‐
+eering  progress  and  research  output  move  together  rather  than  one  being
+deferred indefinitely in favour of the other .
+11.1Roadmap Philosophy
+Each year is scoped so that its software deliverable is a precondition for the following
+year's research question, not merely a nice-to-have alongside it — Year 3's Domino Mo‐
+ment research is not attempted until Year 2's tactical-state pipeline is reliable enough to
+trust as an input, because a causal claim built on an unreliable state representation is
+worse than no claim at all.
+11.2Year‐by‐Year Plan
+Year 1 Foundations & Phases 1–2 — Tracking and World State
+Mathematical and architectural foundations (Parts I–II of this document,
+in full); working player-and-ball tracking (Module ②) on public tracking
+datasets;  first  working  World  State  Builder  (Module  ③)  producing  a
+validated St stream.
+Software: v0.1 tracking pipeline. Research: internal technical report formalising the state-space
+representation (Part II) as a citable standalone artefact.
+Year 2 First Prototype & Phases 3–4 — Spatial & Tactical Intelligence
+Pitch-control field (Module ④) and phase/press recognition (Module ⑤)
+operating end-to-end on full matches; first internal dashboard for manual
+QA of tactical-state output.
+Software: v0.3 — spatial and tactical layers integrated. Research: workshop or conference sub‐
+mission on the tactical-state representation and phase-classification approach.
+PART XI — RESEARCH ROADMAP FOOTBALL CAUSAL INTELLIGENCE ENGINE
+62
+
+## Page 63
+
+Year 3 Research Core & Phases 5–6 — Domino Moments & Counterfactual Reasoning
+The centre of the whole programme: first working Causal Reasoning En‐
+gine (Module ⑧) and Counterfactual Simulator (Module ⑨), evaluated
+against the protocol in §6.6.
+Software: v0.5 — causal reasoning beta, internal use only. Research: the two flagship papers —
+Domino Moment Detection, and Counterfactual Tactical Analysis (Part XII, items 1 and 4).
+Year 4 Platform Engineering & Phases 7–8 — Knowledge Graph & Football LLM
+Full Knowledge Graph schema (Part VIII) in production; Football LLM
+and Coach AI (Part IX) integrated and grounded; first pilot deployment
+with a single partner club under a research-use agreement.
+Software: v1.0-beta — Coach AI pilot. Research: Football Knowledge Graph paper; Explainable
+Tactical AI paper (Part XII, items 5 and 6).
+Year 5 Validation, Dashboards & Phase 9 — Coach Dashboard
+Full dashboard suite (Part X) across all seven personas; multi-club valida‐
+tion study measuring whether Coach AI recommendations correlate with
+independently  observed  tactical  improvement,  not  just  internal
+consistency metrics.
+Software: v1.0 public/commercial launch. Research: journal-length synthesis paper and the real-
+world validation study — the first attempt at the field's hardest open question (Part XIV, §14.1).
+PART XI — RESEARCH ROADMAP FOOTBALL CAUSAL INTELLIGENCE ENGINE
+63
+
+## Page 64
+
+XII
+PART TWELVE
+Publications
+Twenty-two candidate papers this research programme could plausibly produce,
+grouped by the Part of this document each draws on — proposed directions, not
+claims that any of them yet exist.
+
+## Page 65
+
+E
+ach entry names a target venue category, not a specific claimed acceptance
+— the point of this list is to show that FCIE's research core (Parts II, VI, and
+VII especially) fractures naturally into publishable units, which is a reasonable
+test of whether a research agenda has real substance or is one idea wearing
+many section headers.
+Foundational & State Representation
+Causal Core
+SPORTS ANALYTICSA State-Space Formalism for Multi-Agent Invasion Sports — Part II's
+St representation as a standalone, sport-agnostic contribution.
+1
+SPORTS  ANALYTICS  /  COMPLEX  SYSTEMSTactical Entropy: An Information-Theoretic Meas‐
+ure of Match Disorder — formalising and empirically validating §2.11.
+2
+SPORTS  SCIENCECognitive  Load  Estimation  from  Broadcast  Tracking  Data  —  testing
+whether the §2.10 proxy correlates with known decision-time pressure effects from
+sports-science literature.
+3
+SPORTS  ANALYTICSPitch Control as a Continuous Probability Field: Reassessing Spatial
+Occupancy Models — extending §2.7 with a systematic comparison against prior
+tessellation-based approaches.
+4
+APPLIED DATA SCIENCEDomino Moments: Detecting the Earliest Causally-Decisive Action
+in a Possession — the flagship paper , Part VI in full.
+1
+CAUSAL  ML  WORKSHOPCounterfactual Tactical Analysis via Learned World Models —
+Part  VII's  estimation  framework,  evaluated  against  §7.2's  three  methods  head-to-
+head.
+2
+AAMASOpponent-Adaptive Counterfactual Simulation in Team Sports — isolating how
+much §7.3's opponent-adaptation modelling changes importance rankings versus a
+fixed-opponent baseline (Research Question 3).
+3
+CAUSAL ML WORKSHOPGranger-Inspired Causal Discovery in Non-Stationary Multi-Agent
+Systems — §6.4.5 as a methodological contribution to causal discovery under drift,
+beyond football specifically.
+4
+PART XII — PUBLICATIONS FOOTBALL CAUSAL INTELLIGENCE ENGINE
+65
+
+## Page 66
+
+Graphs, Language & Systems
+Representation Learning & Generalisation
+INTERPRETABILITY WORKSHOPFrom Attention Weights to Causal Attribution: A Cautionary
+Comparison — a deliberately sceptical paper testing how much §6.4.1's attention-
+based candidates agree with §6.4.2–6.4.3's more principled estimates, and where they
+mislead.
+5
+SPORTS  ANALYTICSBenchmarking Causal Importance Against Expert Analyst Judgment
+— formalising §6.6's evaluation protocol as a reusable benchmark methodology.
+6
+SEMANTIC WEB / GRAPH SYSTEMSA Temporal Knowledge Graph Schema for Football Tac‐
+tical Reasoning — Part VIII's schema as a proposed shared standard.
+1
+APPLIED  NLPA  Retrieval-Augmented  Architecture  for  Hallucination-Resistant  Sports
+Commentary Generation — §8.5–8.6's grounding mechanism, evaluated for claim-
+support rate.
+2
+FACCT  /  EXPLAINABILITYExplainable Tactical AI: Grounding Language Model Explana‐
+tions in Causal Evidence — Part IX as a human-AI trust and explainability case study.
+3
+APPLIED NLP / HCIConfidence-Calibrated Natural Language Generation for High-Stakes
+Coaching  Recommendations  —  testing  whether  §9.3's  confidence-surfacing
+measurably changes coach trust and decision quality.
+4
+GRAPH  LEARNING  WORKSHOPTemporal Graph Neural Networks for Emergent Team Co‐
+ordination Detection — §2.8 and §5.3's evolving-topology GNN approach to press-trap
+detection.
+5
+REPRESENTATION LEARNING WORKSHOPSelf-Supervised Pretraining for Sparse-Label Tactic‐
+al Recognition — §5.8's masked-state objective, quantifying how much labelled data
+it saves.
+1
+SPORTS  ANALYTICSContrastive Player Embeddings for Style-Based Scouting — the re‐
+cruitment use case from Part X, evaluated against known transfer outcomes.
+2
+PART XII — PUBLICATIONS FOOTBALL CAUSAL INTELLIGENCE ENGINE
+66
+
+## Page 67
+
+Datasets & Cross‐Domain
+REPRESENTATION  LEARNINGHidden Tactical Structures: Latent Variable Models of Unob‐
+served Coaching Intent — an attempt to operationalise §2.15, one of the document's
+own flagged open problems.
+3
+SPORTS ANALYTICSCross-League Transfer of Tactical Style Embeddings — directly testing
+Research Question 6 from Part III.
+4
+ROBOTICS  /  SIMULATION  WORKSHOPMulti-Agent World Models for Football: Architecture
+and Sim-to-Real Gap Analysis — an honest accounting of Part V, §5.6's limitations,
+written as a methods paper rather than a results paper .
+5
+DATASETS  &  BENCHMARKS  TRACKA Public Benchmark Dataset for Tactical Turning-Point
+Detection in Football — releasing the expert-labelled corpus §6.6 depends on, likely
+the single highest-leverage contribution to the broader field.
+1
+SPORTS  ANALYTICSGeneralizing Domino Moment Detection Beyond Football: A Cross-
+Sport Evaluation — the transfer test proposed in §7.5, applied to basketball or hockey
+tracking data.
+2
+PART XII — PUBLICATIONS FOOTBALL CAUSAL INTELLIGENCE ENGINE
+67
+
+## Page 68
+
+XIII
+PART THIRTEEN
+Startup Vision
+What it would take for FCIE to leave the lab — and an honest look at the market it
+would be walking into.
+— 13.1 Business Model
+— 13.2 Customers & Market
+— 13.3 Competitive Landscape
+— 13.4 Risks
+— 13.5 Funding Strategy
+
+## Page 69
+
+N
+othing in this Part should be read as a claim that commercialisation is
+the point of FCIE — Parts I through XII stand on their own as a research
+programme. This Part exists because the original brief asked what happens if
+the research does leave the lab, and because thinking honestly about a market
+forces useful discipline back onto the technical roadmap.
+13.1Business Model
+A tiered B2B SaaS model fits the buyer landscape better than a single price point. A youth
+academy tier offers the simplified, development-focused dashboard from Part X at low
+cost, prioritising adoption and data volume over margin. A professional club tier offers
+the full Coach AI, analyst tooling, and scouting/recruitment modules, priced against the
+analyst headcount it augments rather than replaces. A broadcaster / media tier licenses
+Match Narrative generation (§2.14) for enhanced post-match content, a genuinely different
+buyer with a different willingness to pay and a much higher volume, lower-margin-per-
+match economics. A separate, smaller research licensing track — the Knowledge Graph
+schema and benchmark dataset from Part XII, item 21 — is offered to academic groups at
+low or no cost, both as a genuine public contribution and as a credibility and recruiting
+channel.
+13.2Customers & Market
+The buyer set spans professional clubs (first-team and academy analytics departments),
+federations (national-team and youth-pathway analysis), and media/broadcast organisa‐
+tions. Betting and wagering-adjacent analytics firms are a real, distinct segment of the ex‐
+isting sports-data market — mentioned here only as a factual feature of the competitive
+landscape, not a direction FCIE's own roadmap targets, since the product's value proposi‐
+tion (explainable, coach-facing causal reasoning) is a poor fit for that use case regardless.
+13.3Competitive Landscape
+The market is not empty, and pretending otherwise would undercut the credibility of
+everything  else  in  this  document.  Established  sports-data  and  analytics  providers  —
+among them StatsBomb, Opta/Stats Perform, SkillCorner , and Second Spectrum — already
+supply high-quality event and tracking data, and several offer their own valuation and
+visualisation layers on top of it. FCIE's differentiated position is not "better tracking data"
+— it does not need to compete on that axis at all in an early stage, since it can ingest data
+from these same providers — but the causal reasoning and explanation layer sitting above
+PART XIII — STARTUP VISION FOOTBALL CAUSAL INTELLIGENCE ENGINE
+69
+
+## Page 70
+
+the data, which is not, to current public knowledge, a mature offering from any of them.
+That is a genuine gap, but it is also the kind of gap an incumbent with existing club rela‐
+tionships and tracking infrastructure could close quickly once the value is proven, which is
+the central strategic risk in §13.4.
+13.4Risks
+Data and rights access. Broadcast video rights and league-level tracking data access
+are gated and often exclusive; a commercial version of FCIE needs data-partnership
+agreements that a research prototype can sidestep.
+Incumbent response. Existing providers with deeper club relationships and existing
+tracking  pipelines  are  well  positioned  to  build  a  competing  causal  layer  once  FCIE
+demonstrates the category is valuable — the classic fast-follower risk for any single-
+layer innovation on top of someone else's platform.
+GPU and inference cost at the scale of full-league, near-real-time deployment, particu‐
+larly for the Counterfactual Simulator's rollout-heavy workload (Part IV, §4.5, Module
+⑯).
+Trust and adoption. Coaching staffs are (rightly) sceptical of black-box recommenda‐
+tions; adoption depends entirely on the explainability discipline in Part IX, §9.3 actually
+holding up under real scrutiny, not just performing well in a demo.
+Causal validity risk. Part VI and Part XIV are explicit that causal claims from observa‐
+tional  sports  data  carry  real,  unresolved  uncertainty  —  overselling  confidence  to  a
+paying customer is both a commercial and an intellectual-integrity risk.
+13.5Funding Strategy
+A milestone-based approach follows naturally from the roadmap in Part XI rather than a
+generic fundraising narrative: pre-seed or grant funding covering Years 1–2 (tracking and
+state-representation foundations, where the deliverable is research credibility, not reven‐
+ue); a seed round timed to Year 3's Domino Moment and counterfactual research results,
+which are the first outputs a technical investor could actually evaluate; and a Series A
+timed to Year 4's pilot club deployment, once there is a real usage signal rather than a re‐
+search claim to underwrite the raise. Grant and academic-partnership funding (university
+co-supervision, national research-council programmes for applied AI) is a plausible, cur‐
+rently under-used channel for Years 1–2 specifically, given how much of that period is
+genuine open research rather than product engineering.
+• 
+• 
+• 
+• 
+• 
+PART XIII — STARTUP VISION FOOTBALL CAUSAL INTELLIGENCE ENGINE
+70
+
+## Page 71
+
+XIV
+PART FOURTEEN
+Open Problems
+What this document has not solved, stated plainly — because a research pro‐
+gramme that only lists its strengths is a pitch deck, not a research programme.
+— 14.1 The Causal Identifiability Problem
+— 14.2 Ground-Truth Scarcity
+— 14.3 Non-Stationarity & Opponent Adaptation
+— 14.4 Multi-Agent Credit Assignment
+— 14.5 The Sim-to-Real Gap
+— 14.6 Explainability vs. Accuracy
+— 14.7 Data Rights & Likeness
+— 14.8 Cross-League Generalisation
+
+## Page 72
+
+E
+very problem below has already been mentioned somewhere earlier in
+this document, in passing, at the point where it first became relevant. Col‐
+lecting them here is deliberate: scattered across fourteen Parts they read as
+caveats; gathered in one place they read as what they actually are — the honest
+current boundary of what FCIE can claim to do.
+14.1The Causal Identifiability Problem
+Football offers no randomised controlled trials. No manager will replay the same match
+twice, once pressing high and once sitting deep, to give FCIE clean experimental variation.
+Every causal estimate in this document is therefore an estimate under assumptions — no-
+unmeasured-confounding chief among them — that can never be fully verified from ob‐
+servational data alone, however sophisticated the estimator . This is not a problem FCIE
+solves; it is a problem FCIE is explicit about, which is the most that honest causal inference
+from observational data can offer in any domain, sports included.
+14.2Ground‐Truth Scarcity
+There is no agreed, large-scale labelled dataset of "true" Domino Moments against which
+Part VI's algorithms can be definitively validated, and building one requires exactly the
+kind of scarce expert-analyst time that motivated the self-supervised approach in Part V,
+§5.8 in the first place. The benchmark dataset proposed in Part XII, item 21 is FCIE's best
+answer to this, and it remains, at the time of writing, unbuilt.
+14.3Non‐Stationarity & Opponent Adaptation
+Tactical cause-and-effect relationships drift as the league adapts to them — a pressing trig‐
+ger that reliably won the ball back in one season is exactly the pattern opponents spend
+the close season training against. Any model treating causal effects as fixed population
+parameters will degrade quietly over time; detecting that degradation before it shows up
+as visibly wrong recommendations is an open monitoring problem, not just a modelling
+one (Part IV, §4.5, Module ⑱).
+14.4Multi‐Agent Credit Assignment
+Twenty-two agents interact continuously; isolating one player's or one decision's causal
+contribution from the joint action of the collective is a version of the credit-assignment
+problem that multi-agent reinforcement learning has studied for years without a fully gen‐
+eral solution. Part VI's Shapley-style approach (§6.4.2) is a principled partial answer , not a
+solved problem — it inherits every known limitation of Shapley-value credit assignment
+under correlated, non-independent player actions.
+PART XIV — OPEN PROBLEMS FOOTBALL CAUSAL INTELLIGENCE ENGINE
+72
+
+## Page 73
+
+14.5The Sim‐to‐Real Gap
+The Counterfactual Simulator's rollouts are only as trustworthy as the world model produ‐
+cing them, and every learned world model is trained on a finite historical distribution of
+human behaviour . Asked to simulate a genuinely novel intervention — one far from any‐
+thing in its training data — it will produce a confident-looking but potentially unreliable
+answer , and detecting when a query has crossed into that unreliable regime is itself an
+unsolved calibration problem, not a footnote.
+14.6Explainability vs. Accuracy
+The design commitment in Part I, §1.6 — no unexplainable causal claim — is not free. It
+rules out, by construction, model classes and techniques that might produce marginally
+better raw predictive accuracy at the cost of interpretability, a trade-off this document
+accepts deliberately but which will recur , concretely, at nearly every future modelling de‐
+cision, and will not always be comfortable to hold to when a less interpretable approach is
+measurably more accurate.
+14.7Data Rights & Likeness
+Broadcast video contains identifiable players whose likeness, performance data, and — for
+youth academy use in particular — welfare are all subject to rights, consent, and increas‐
+ingly specific regulatory regimes that vary by league, country, and player age. A research
+prototype trained on public tracking datasets can defer this; a commercial deployment
+(Part XIII) cannot, and the data-partnership and consent architecture this requires is a
+substantial, currently unscoped piece of work in its own right.
+14.8Cross‐League Generalisation
+Everything from reaction-time priors in the spatial-intelligence field (§4.2, Module ④) to
+the phase-classification labels in Tactical Understanding (Module ⑤) is, at present, tuned
+against whatever leagues and competitions the training data happens to cover . Whether
+the causal structures FCIE learns to detect are genuinely universal football phenomena or
+artefacts of a specific competition's tactical culture is precisely Research Question 6 (Part
+III) — and until it is answered, every claim in this document should be read as scoped to
+the data it was developed on, not as a universal claim about football itself.
+PART XIV — OPEN PROBLEMS FOOTBALL CAUSAL INTELLIGENCE ENGINE
+73
+
+## Page 74
+
+XV
+PART FIFTEEN
+Appendices
+Glossary, notation, schemas, API surface, repository layout, and the reading list
+this whole document was built on top of.
+— 15.1 Glossary
+— 15.2 Notation Reference
+— 15.3 Data Schemas
+— 15.4 API Specification
+— 15.5 Repository Structure
+— 15.6 Database Schema Summary
+— 15.7 Deployment T opology
+— 15.8 T echnology Stack
+— 15.9 Further Reading
+
+## Page 75
+
+15.1Glossary
+Domino Moment
+The earliest state transition with high, min‐
+imal  causal  influence  on  a  downstream
+outcome (§2.5, §6.1).
+Influence
+Estimated causal effect size of a decision
+on an outcome, I(vi) (§6.2).
+Importance
+Influence  combined  with  rarity  and  re‐
+versibility; the coach-facing ranking score
+(§6.3).
+World State (St)
+The full low-level match state tuple at time
+t (§2.2).
+Tactical State (τt)
+Compressed, coach-legible abstraction of St
+(§2.3).
+Pitch Control
+Probability  field  over  who  reaches  each
+pitch location first (§2.7).
+Tactical Entropy
+Shannon entropy over the outcome/control
+distribution; a measure of match disorder
+(§2.11).
+Cognitive Load
+Proxy for decision difficulty facing a player
+at a given instant (§2.10).
+Decision Chain
+Directed  graph  of  sequential  decision
+points within a possession (§2.12).
+Causal Chain
+A Decision Chain with edges weighted by
+estimated causal influence (§2.13).
+Counterfactual
+The estimated alternative outcome under a
+different  action  at  a  decision  point  (Part
+VII).
+Structural Causal Model (SCM)
+Pearl-style  formalism  relating  variables
+through  causal,  not  merely  correlational,
+structure.
+do(·)
+The  intervention  operator:  "set  this  vari‐
+able  by  intervention,"  not  "condition  on
+observing this value."
+Match Narrative
+Ranked  Domino  Moments  strung  into  a
+causally-ordered  account  of  how  an
+outcome arose (§2.14).
+Hidden Tactical Structure
+Latent  variable  Zt capturing  unobserved
+coaching intent (§2.15).
+Knowledge Graph
+The temporal property graph storing entit‐
+ies and relationships across a match (Part
+VIII).
+RAG
+Retrieval-Augmented  Generation  —
+grounding  LLM  output  in  retrieved  evid‐
+ence  rather  than  parametric  memory
+alone.
+World Model
+A learned model of state-transition dynam‐
+ics used to simulate counterfactual rollouts
+(§5.6).
+GNN
+PART XV — APPENDICES FOOTBALL CAUSAL INTELLIGENCE ENGINE
+75
+
+## Page 76
+
+Graph Neural Network — message-passing
+model  over  player-interaction  graphs
+(§5.3).
+Expected Threat (xT)
+Established possession-value metric estim‐
+ating  scoring  probability  from  ball  loca‐
+tion.
+VAEP
+Established  action-valuation  framework
+crediting  individual  actions  by  predicted
+probability shift.
+PPDA
+Passes-per-defensive-action  —  an  estab‐
+lished aggregate pressing-intensity metric.
+Confounding
+A  third  variable  influencing  both  a  de‐
+cision  and  its  outcome,  biasing  naive
+causal estimates (§1.4).
+Non‐stationarity
+Drift in causal relationships over time as
+tactics and opponents adapt (§14.3).
+Sim‐to‐real gap
+Divergence between a learned simulator's
+behaviour  and  true  real-world  dynamics
+(§14.5).
+Contrastive Learning
+Representation-learning  objective  pulling
+similar  examples  together  and  dissimilar
+ones apart in embedding space (§5.8).
+15.2Notation Reference
+Symbol Meaning Symbol Meaning
+St Match state at time t τt Tactical state (abstraction of St)
+Pt, Bt Player / ball positions Mt Temporal memory embedding
+Vt, Ot Velocities / orientation T(·) State transition function
+Φt Formation / shape embed‐
+ding
+D = (V, E) Decision Chain graph
+Πt Pressure field I(vi) Influence of decision node vi
+Λt Passing lanes do(·) Causal intervention operator
+Ct Game context H(St) Tactical entropy
+pteam(x,y,t) Pitch-control field μt Tactical momentum
+IG(pass) Information gain of a passL(player,
+t)
+Cognitive load
+Zt Latent tactical structureφ(·) State-to-tactical abstraction func‐
+tion
+PART XV — APPENDICES FOOTBALL CAUSAL INTELLIGENCE ENGINE
+76
+
+## Page 77
+
+15.3Data Schemas
+Fig. 15.1 — World state (St) record, abbreviated.
+Fig. 15.2 — DominoMoment record, abbreviated.
+15.4API Specification
+Table 15.1 — Representative REST surface, exposed via the API Gateway (Module ⑪)
+{
+  "state": {
+    "t": 2143.6, "match_id": "m_2026_0512",
+    "players": [{"id":"p14","team":"home","x":34.2,"y":18.7,
+                 "v":[1.2,-0.4],"orientation":97.5,"confidence":0.94}],
+    "ball": {"x":36.0,"y":19.1,"z":0.3,"v":[3.1,0.2,0.0]},
+    "formation": {"home":"emb_4231_a","away":"emb_352_c"},
+    "pressure_field_ref": "grid:./m_2026_0512/2143.6",
+    "context": {"score":"1-0","clock":2143.6,"cards":[]}
+  }
+}
+{
+  "domino_moment": {
+    "id": "dm_88213", "match_id": "m_2026_0512", "t": 1980.2,
+    "decision_node": "v_4471", "player_id": "p9",
+    "influence": 0.81, "importance": 0.74,
+    "rarity": 0.63, "reversibility_inv": 0.88,
+    "contributing_methods": ["shapley_causal","worldmodel_rollout","graph_propagation"],
+    "evidence": {"video_ts": 1980.2, "graph_path": "/query/enabled_chain/dm_88213"}
+  }
+}
+PART XV — APPENDICES FOOTBALL CAUSAL INTELLIGENCE ENGINE
+77
+
+## Page 78
+
+Method Path Purpose
+GET /matches/{id}/state?t= Retrieve St at a given timestamp.
+GET /matches/{id}/domino-momentsRanked Domino Moment list for a match.
+POST /matches/{id}/counterfactualRequest a counterfactual rollout for a given
+decision node.
+GET /matches/{id}/narrative Retrieve the generated Match Narrative.
+POST /coach-ai/query Submit a natural-language question (Part IX).
+GET /players/{id}/style-embeddingRetrieve contrastive style embedding for
+scouting use (§5.8, Part X).
+GET /graph/query Pass-through Cypher query, authenticated
+analyst access only.
+GET /matches/{id}/export/sportscode-xmlExport Domino Moments as Sportscode XML timeline (Module ㉓).
+POST /matches/{id}/import/sportscode-feedbackImport analyst adjustments and false positive tags from Sportscode.
+GET /matches/{id}/set-pieces Retrieve detected set-piece routines and contact graphs (Module ㉑).
+POST /set-pieces/{id}/counterfactual-deliverySimulate delivery trajectory perturbation and aerial contests.
+POST /matches/{id}/telemetry/uploadIngest 10–20 Hz GPS/GNSS physical load data (Module ㉒).
+GET /matches/{id}/telemetry/substitution-riskRetrieve fatigue-induced tactical breakdown risk radar.
+WS /ws/war-room/{match_id} Real-time tactile iPad canvas WebSocket stream (Module ㉔).
+GET /teams/{id}/vulnerability-dossierRetrieve pre-match opposition exploitation dossier (Module ㉕).
+POST /matches/{id}/generate-player-clipsBatch render 15–90s player micro-briefing videos (Module ㉖).
+15.5Repository Structure
+fcie/
+├── services/
+│   ├── ingestion/          (Module ①)
+│   ├── vision/              (Module ②)
+│   ├── world-state/         (Module ③)
+│   ├── spatial-intel/       (Module ④)
+│   ├── tactical-understanding/ (Module ⑤)
+│   ├── temporal-memory/     (Module ⑥)
+│   ├── knowledge-graph/     (Module ⑦)
+│   ├── causal-engine/       (Module ⑧)
+│   ├── counterfactual-sim/  (Module ⑨)
+│   ├── football-llm/        (Module ⑩)
+│   ├── api-gateway/         (Module ⑪)
+│   ├── setpiece/            (Module ㉑ - Set-Piece Causal Engine)
+│   ├── telemetry/           (Module ㉒ - Biomechanical/GPS Fusion)
+│   ├── sportscode/          (Module ㉓ - Hudl Sportscode Bridge)
+│   ├── scouting/            (Module ㉕ - Opposition Red-Teaming)
+│   └── media/               (Module ㉖ - Micro-Clip Video Generator)
+├── apps/
+│   ├── dashboard/           (Part X, Next.js Tactical Command Center)
+│   ├── war-room/            (Module ㉔, iPad WebGPU Tactile Canvas)
+│   └── player-mobile/       (Module ㉖, Player Micro-Briefing App)
+├── libs/
+│   ├── state-schema/        (shared S_t / τ_t / set-piece / GPS types)
+│   ├── graph-schema/        (Part VIII node/edge definitions)
+│   └── sportscode-xml/      (Sportscode open exchange serializers)
+├── research/
+│   ├── notebooks/
+│   └── papers/               (Part XII drafts)
+├── infra/
+│   ├── k8s/                 (Cloud orchestration)
+│   ├── terraform/           (Cloud provisioning)
+│   └── onprem/              (Module ㉗, Air-Gapped Local GPU Appliance)
+└── docs/
+PART XV — APPENDICES FOOTBALL CAUSAL INTELLIGENCE ENGINE
+78
+
+## Page 79
+
+15.6Database Schema Summary
+Table 15.2 — Persistence layer, by store
+Store Holds
+PostgreSQL Match metadata, club/user accounts, subscription/billing, Sportscode instance tags
+DuckDB / Parquet Full-frequency tracking coordinates (25 Hz S_t), 10–20 Hz GPS telemetry streams
+Redis / Valkey API response cache, rate-limit counters, live-session state, War-Room WebSocket state
+Qdrant / Milvus Player/play-style embeddings, memory-retrieval vectors (§5.8, Module ⑥)
+Neo4j / AGE The Football Knowledge Graph in full (Part VIII), set-piece screening interaction graphs
+MinIO / SeaweedFS Raw broadcast video, multi-angle feeds, player micro-clip MP4s, model checkpoints
+15.7Deployment T opology
+Fig. 15.3 — Deployment topology, complementing the data-flow view in Fig. 4.1.
+15.8T echnology Stack
+Table 15.3 — Consolidated stack, gathered from Parts IV–V
+                    ┌───────────────┐
+                    │      CDN       │  (video replay, static dashboard assets)
+                    └───────┬────────┘
+                            ▼
+ ┌──────────────────────────────────────────────────┐
+ │                  Cloud Region (K8s)                │
+ │  ┌───────────────┐   ┌──────────────────────────┐  │
+ │  │ CPU node pool  │   │      GPU node pool        │  │
+ │  │ API / graph /  │   │  vision · world-model ·   │  │
+ │  │ services ⑦⑪⑬  │   │  counterfactual sim ⑨⑯   │  │
+ │  └───────────────┘   └──────────────────────────┘  │
+ │             polyglot persistence (§15.6)            │
+ └──────────────────────────────────────────────────────┘
+                            ▲
+                            │  ingest (RTMP/HLS)
+                    ┌───────┴────────┐
+                    │  Broadcast /    │
+                    │  club camera    │
+                    └────────────────┘
+PART XV — APPENDICES FOOTBALL CAUSAL INTELLIGENCE ENGINE
+79
+
+## Page 80
+
+Layer Technologies
+Vision YOLOv11/RT-DETR, ByteTrack/StrongSORT, MediaPipe/HRNet, OpenCV, FFm‐
+peg
+Reasoning Graph Neural Networks, Temporal Transformers, Temporal GNNs, world
+models
+Language Llama / Qwen / Mistral (open-weight, self-hosted), RAG over Neo4j
+Backend Python, FastAPI, gRPC, Docker , Kubernetes
+Data PostgreSQL, Redis, Qdrant/Milvus, Neo4j, MinIO/S3
+Frontend React, Next.js, TypeScript, D3.js, Plotly, Three.js (future)
+MLOps MLflow, DVC, Weights & Biases, GitHub Actions
+15.9Further Reading
+This document proposes original formalism throughout Part II, but it does not pretend to
+do so in a vacuum. Readers who want the intellectual lineage behind specific pieces should
+look  to:  Judea  Pearl's  work  on  structural  causal  models  and  do-calculus  (accessibly
+summarised in  The Book of Why, written with Dana Mackenzie) for everything in §2.13
+and Part VI–VII; the probabilistic pitch-control research associated with Will Spearman for
+§2.7; Karun Singh's Expected Threat framework and Tom Decroos and colleagues' VAEP
+work (KU Leuven) as the possession-valuation lineage discussed critically in §1.5 and Part
+III; and the broader graph neural network and temporal-graph-learning literature for the
+modelling choices in §5.3 and Part VIII. Open tracking datasets released by providers such
+as Metrica Sports are a practical starting point for Year 1 of the roadmap (Part XI) before
+any club data-sharing agreement is in place.
+PART XV — APPENDICES FOOTBALL CAUSAL INTELLIGENCE ENGINE
+80
+
