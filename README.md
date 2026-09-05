@@ -5,7 +5,7 @@
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Research Track](https://img.shields.io/badge/Research-KDD%20%7C%20MIT%20Sloan%20%7C%20CVPR-purple.svg)]()
+[![Optical Tracking](https://img.shields.io/badge/Data-Metrica%20Sports%20(25%20FPS)-purple.svg)]()
 [![Hardware: CPU Friendly](https://img.shields.io/badge/Compute-Low--Resource%20CPU%20Ready-brightgreen.svg)]()
 [![Documentation](https://img.shields.io/badge/Docs-Authoritative%20Specs%20(3700%2B%20lines)-orange.svg)](docs/TEMPO_Research_Vision_Document.md)
 
@@ -25,6 +25,44 @@ This initial structural break triggers a catastrophic chain reaction: adjacent d
 1. **Detect Domino Moments ($\tau_{\text{domino}}$)** seconds before conventional threat metrics register danger.
 2. **Isolate the Causal Root Player ($k^*$)** responsible for initiating the structural rupture.
 3. **Simulate Counterfactual Interventions**: *"What if the defender had held their zonal anchor instead of biting on the decoy run?"*
+
+---
+
+## 🚀 Quickstart: Launching the TEMPO Tactical Studio
+
+TEMPO includes a full-stack, interactive **Tactical Studio Web Application** designed for match analysts and coaching staffs:
+
+### 1. Launch the Studio
+```bash
+python3 run_studio.py
+```
+Open your browser at **[http://localhost:8000](http://localhost:8000)**.
+
+### Features in the Studio:
+- **60 FPS Interactive Pitch Canvas:** 22 players with numbers, velocity trails, ball physics, and real-time defensive convex hull.
+- **Dynamic Domino Threat Gauge:** Real-time structural collapse meter updating frame-by-frame.
+- **Causal Root Inspector:** Pinpoints the exact defender who broke the line (e.g. Defender #21) with quantitative diagnostic.
+- **🔀 Counterfactual "What-If" Switch:** One click switches the replay to a simulated counterfactual where the defense stays disciplined and shuts down the goal!
+- **📋 What-If Tactical Dossier & Drills:** Step-by-step causal cascade breakdown, mathematical proof grid, and pitch-side corrective training drills.
+- **✨ Gemini AI Tactical Narrator:** On-demand lucid debrief generation powered by Google Gemini (`gemini-2.5-flash`) with seamless zero-dependency REST integration and automated heuristic fallback.
+- **Match Episode Navigator:** Dropdown selector to inspect all indexed goals and transition shots from Metrica Game 1.
+
+
+---
+
+## 🧪 Real Match Case Study & Testing
+
+### Run the Real-Match Analysis
+Analyzes Metrica Sports Game 1, Goal 2 (Period 2, 60:00 counter-press transition):
+```bash
+PYTHONPATH=src python3 scripts/analyze_real_goal.py
+```
+- **Output:** Identifies Domino Moment at $t = 3595.9\text{s}$ (**4.28s lead time** before shot), isolates Away Defender #21, and generates multi-panel figure in `outputs/real_match_goal2_domino_analysis.png`.
+
+### Run Verification Test Suite
+```bash
+PYTHONPATH=src python3 tests/test_metrica_pipeline.py
+```
 
 ---
 
@@ -52,72 +90,60 @@ $$\Delta \mathcal{R} = \frac{\mathcal{S}_{\text{actual}}(t_{\text{threat}}) - \m
 
 ```text
 TEMPO/
-├── README.md                                          # Executive README & Architecture Spec
-├── requirements.txt                                   # Minimal CPU-friendly dependencies
+├── run_studio.py                                      # One-command Studio launcher (FastAPI + Uvicorn)
+├── README.md                                          # Executive documentation & specs
+├── requirements.txt                                   # Clean scientific dependencies
 ├── pyproject.toml                                     # Standard Python package build spec
 ├── .gitignore                                         # Git ignore rules for tracking data
+│
+├── app/                                               # Full-Stack Tactical Studio Web App
+│   ├── server.py                                      # FastAPI REST API & static server
+│   └── static/                                        # Frontend UI assets
+│       ├── index.html                                 # Studio dashboard layout
+│       ├── studio.css                                 # Dark-mode tactical styling
+│       └── studio.js                                  # 60 FPS HTML5 Canvas engine
 │
 ├── docs/                                              # Comprehensive Research & Technical Specs
 │   ├── TEMPO_Research_Vision_Document.md              # Authoritative 3,700+ line Master Vision
 │   ├── TEMPO_Master_Architecture_And_Tactical_Vision.md
 │   ├── TEMPO_Low_Resource_Local_To_Cloud_Engineering_Guide.md # Local-to-Cloud engineering manual
-│   ├── tactics/                                       # Complete Football Tactics Masterclass
-│   │   ├── FCIE_Football_Tactics_Masterclass_Complete.md
-│   │   ├── FCIE_Football_Tactics_Masterclass_Part1.md
-│   │   └── FCIE_Football_Tactics_Masterclass_Part2.md
+│   ├── tactics/                                       # Football Tactics Masterclass
 │   └── enterprise/                                    # Tier-1 Premier League / Champions League workflows
-│       └── FCIE_Tier1_Club_Enterprise_Architecture.md
 │
-├── src/tempo/                                         # Core Python Package
+├── src/tempo/                                         # Core Analytics & Intelligence Package
 │   ├── __init__.py
-│   ├── geometry/                                      # Pitch metrics, convex hulls, Voronoi fields
+│   ├── data/                                          # Real-match optical tracking & cataloging
+│   │   ├── metrica_io.py                              # 25 FPS tracking parser & kinematic filter
+│   │   └── episode_catalog.py                         # Match episode indexer & JSON packager
+│   ├── analytics/                                     # Spatial & physics-based models
 │   │   ├── __init__.py
+│   │   └── pitch_control.py                           # William Spearman (2018) PPCF Engine
+│   ├── causal/                                        # Causal inference engine
+│   │   ├── __init__.py
+│   │   └── scm_domino.py                              # Structural Causal Model & Counterfactuals
+│   ├── geometry/                                      # Pitch dimensions, convex hulls, Voronoi
 │   │   └── pitch.py
-│   ├── causal/                                        # Causal SCM & counterfactual engine
-│   │   └── __init__.py
-│   ├── data/                                          # Real-match optical tracking loaders
-│   │   └── __init__.py
-│   └── viz/                                           # FIFA pitch & cascade visualizers
-│       ├── __init__.py
+│   └── viz/                                           # FIFA pitch visualizers
 │       └── pitch_plotter.py
 │
-├── experiments/                                       # Empirical Benchmarks & Experiments
-│   └── .gitkeep
+├── scripts/                                           # Analytical Scripts & Case Studies
+│   └── analyze_real_goal.py                           # Metrica Game 1 Goal 2 SCM case study
 │
-├── tests/                                             # Unit & Integration Test Suites
-│   └── .gitkeep
+├── tests/                                             # Automated Test Suites
+│   └── test_metrica_pipeline.py                       # 100% green verification tests
 │
 └── outputs/                                           # Generated figures, tables, and artifacts
-    └── .gitkeep
+    └── real_match_goal2_domino_analysis.png           # 3-panel publication visual
 ```
-
----
-
-## 🔬 Academic Roadmap: The 3-Paper Strategy
-
-TEMPO is developed following a rigorous vertical publication strategy:
-
-1. **Paper #1 (Core Causal Foundation):**  
-   *"TEMPO: Detecting Domino Moments and Causal Roots in Multi-Agent Football Dynamics"*  
-   - **Focus:** Spatiotemporal graph representation, $\tau_{\text{domino}}$ lead time detection, counterfactual defensive mitigation on open-source Metrica & SkillCorner data.  
-   - **Target Venues:** KDD Sports Analytics, MIT Sloan Sports Analytics Conference (SSAC), CVPR CVSports.
-
-2. **Paper #2 (Dynamic Action Manifolds):**  
-   *"Affordance Manifolds in Elite Football: Quantifying Counter-Press Resistance Under High Press Systems"*  
-   - **Focus:** Micro-affordance zones ($\mathcal{A}_i$), De Zerbi sole-on-ball provocation, Kompany high-line rest-defense.
-
-3. **Paper #3 (Multi-Agent RL & Club Systems):**  
-   *"TEMPO-Orchestrator: Generative Counterfactual Simulation for Match Preparation in Tier-1 Clubs"*  
-   - **Focus:** Multi-agent PPO/MAPPO tactical simulations, matchday briefings, automated video sync.
 
 ---
 
 ## 💻 Low-Resource Engineering Philosophy
 
-You do **not** need expensive GPU clusters to reproduce or contribute to TEMPO:
-- **Local Stage (Consumer CPU):** DuckDB + Polars for sub-second parquet querying; NumPy and SciPy for Voronoi and convex hulls.
-- **Cloud Scaling ($0.35/hour):** Seamless transition to Google Colab, Kaggle, or Modal/RunPod for scaled spatiotemporal GNN training when processing 100+ match seasons.
-- Detailed scaling instructions are documented in [docs/TEMPO_Low_Resource_Local_To_Cloud_Engineering_Guide.md](docs/TEMPO_Low_Resource_Local_To_Cloud_Engineering_Guide.md).
+TEMPO runs 100% locally on standard consumer CPUs without requiring an expensive GPU:
+- **Pitch Control Engine:** Computes full 2D spatial dominance grid in **2.5 ms/frame**.
+- **Interactive UI:** Smooth 60 FPS canvas rendering directly in any modern web browser.
+- **In-Memory Caching:** Episode catalog queries return in **< 5 ms**.
 
 ---
 

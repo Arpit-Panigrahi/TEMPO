@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TEMPO Tactical Studio | Causal Football Intelligence</title>
+  <link rel="stylesheet" href="/static/studio.css?v=2.3">
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header>
+    <div class="logo-area">
+      <span class="logo-badge">TEMPO</span>
+      <div>
+        <div class="logo-title">Tactical Emergence & Multi-Agent Predictive Orchestrator</div>
+        <div class="logo-sub">Enterprise Causal Intelligence & Domino Moment Studio</div>
+      </div>
+    </div>
+
+    <div class="nav-controls">
+      <select id="matchSelect">
+        <option value="metrica_game_1">Metrica Sports: Game 1 (25 FPS Optical)</option>
+      </select>
+
+      <select id="episodeSelect">
+        <option value="">Loading episodes...</option>
+      </select>
+
+      <select id="speedSelect">
+        <option value="0.25">0.25x (Tactical Analysis)</option>
+        <option value="0.5" selected>0.5x Speed (Recommended)</option>
+        <option value="1.0">1.0x Real-time</option>
+      </select>
+
+      <button id="geminiConfigBtn" class="btn-gemini" title="Configure Google Gemini API Key">✨ Gemini AI</button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <div class="main-container">
+    
+    <!-- 2D Interactive Pitch -->
+    <div class="pitch-container">
+      <div class="pitch-floating-bar">
+        <div class="mode-pill-group">
+          <button id="modeActualBtn" class="mode-btn active-actual" title="Actual Match Reality">🔴 Match Reality</button>
+          <button id="modeCFBtn" class="mode-btn" title="Counterfactual Anchor What-If">🛡️ Counterfactual</button>
+          <button id="modeCompareBtn" class="mode-btn" title="Dual Overlay Comparison">⚡ Dual Compare</button>
+        </div>
+        <div class="action-divider"></div>
+        <button id="jumpDominoBtn" class="btn-action" title="Jump to Domino Rupture Frame">⚡ Rupture (t - 4.3s)</button>
+        <button id="jumpThreatBtn" class="btn-action" title="Jump to Shot Frame">⚽ Shot</button>
+        <div class="action-divider"></div>
+        <button id="toggleFocusBtn" class="btn-toggle active" title="Spotlight Key Actors and Dim Non-Involved Players">🎯 Spotlight: Key Actors</button>
+        <button id="toggleHullBtn" class="btn-toggle" title="Toggle Convex Hull">⬡ Block</button>
+        <button id="toggleHeatmapBtn" class="btn-toggle" title="Toggle William Spearman Pitch Control">🔥 Pitch Control</button>
+      </div>
+
+      <!-- Sleek Tactical Narrative Banner -->
+      <div id="tacticalBanner" class="tactical-banner banner-actual">
+        <span id="bannerIcon">🔴</span>
+        <span id="bannerText">ACTUAL MATCH REALITY: Defender #21 stepped out of line, opening a 7.3m through-ball corridor</span>
+      </div>
+
+      <canvas id="pitchCanvas" width="1050" height="680"></canvas>
+    </div>
+
+    <!-- Tactical Intelligence Sidebar -->
+    <div class="sidebar">
+      
+      <!-- Card 1: Domino Collapse Threat Gauge -->
+      <div class="card">
+        <div class="card-title">
+          <span>Domino Breakdown Threat</span>
+          <span id="threatBadge" class="status-badge status-safe">STABLE</span>
+        </div>
+        <div class="gauge-bar-bg">
+          <div id="gaugeBar" class="gauge-bar-fill"></div>
+        </div>
+        <div class="gauge-val">
+          <span id="threatScoreVal">0.18</span>
+          <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">/ Structural Disruption Index</span>
+        </div>
+      </div>
+
+      <!-- Card 2: Live Tactical Geometry Metrics -->
+      <div class="card">
+        <div class="card-title">Live Formation Metrics</div>
+        <div class="metrics-grid">
+          <div class="metric-item">
+            <div class="metric-label">Backline Depth Var</div>
+            <div id="metricLineVar" class="metric-value">1.4 m</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">Max Channel Gap</div>
+            <div id="metricMaxGap" class="metric-value">5.2 m</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">Dangerous Space (PPCF)</div>
+            <div id="metricDangerCtrl" class="metric-value">180 m²</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">Early Lead Window</div>
+            <div id="metricLeadTime" class="metric-value">-- s</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Causal Root-Cause Inspector -->
+      <div class="card">
+        <div class="card-title">Causal Root Inspector</div>
+        <div class="causal-box">
+          <div id="causalRootName" class="causal-player">Awaiting Domino Moment...</div>
+          <div id="causalRootDesc" class="causal-desc">Formation is currently coherent. Scanning for structural breakdown inflection.</div>
+        </div>
+      </div>
+
+      <!-- Card 4: Counterfactual "What-If" Switch -->
+      <div class="card">
+        <div class="card-title">
+          <span>Counterfactual Engine</span>
+          <span id="cfModeBadge" class="status-badge" style="background: rgba(255, 71, 87, 0.2); color: #ff4757;">REALITY</span>
+        </div>
+        <button id="cfToggleBtn" class="cf-switch-btn">
+          <span>🔀 Simulate Counterfactual (What-If)</span>
+        </button>
+
+        <div class="cf-action-row">
+          <button id="loopRuptureBtn">🔁 Loop</button>
+          <button id="jumpInspectBtn">🔍 Zoom</button>
+          <button id="openDossierBtn" class="btn-dossier">📑 Dossier</button>
+          <button id="genAiBtn" class="btn-gen-ai" title="Generate AI Debrief with Gemini">✨ AI Debrief</button>
+        </div>
+
+        <table class="cf-compare-table">
+          <thead>
+            <tr>
+              <th>TACTICAL VECTOR</th>
+              <th>REALITY</th>
+              <th>COUNTERFACTUAL</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Corridor Gap</td>
+              <td id="tdActualGap" class="val-bad">7.3 m</td>
+              <td id="tdCfGap" class="val-good">3.2 m (Sealed)</td>
+            </tr>
+            <tr>
+              <td>Danger Space</td>
+              <td id="tdActualDanger" class="val-bad">180 m²</td>
+              <td id="tdCfDanger" class="val-good">128 m² (-29%)</td>
+            </tr>
+            <tr>
+              <td>Offside Line</td>
+              <td id="tdActualLine" class="val-bad">Ruptured</td>
+              <td id="tdCfLine" class="val-good">Laser Intact</td>
+            </tr>
+            <tr>
+              <td>Attacker Status</td>
+              <td id="tdActualAtt" class="val-bad">Goal Scored</td>
+              <td id="tdCfAtt" class="val-good">Flagged Offside</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Lucid What-If Narrative Box -->
+        <div class="whatif-box">
+          <div class="whatif-header">
+            <span>🛡️ WHAT-IF CAUSAL DEBRIEF</span>
+            <span id="whatifBadge" class="whatif-pill">t - 4.3s Window</span>
+          </div>
+          <p id="whatifSummary" class="whatif-text">
+            Evaluating structural breakdown...
+          </p>
+          <div class="whatif-section">
+            <div class="whatif-label">1. ACTUAL BREAKDOWN MECHANISM:</div>
+            <div id="whatifActual" class="whatif-subtext">...</div>
+          </div>
+          <div class="whatif-section">
+            <div class="whatif-label">2. COUNTERFACTUAL WHAT-IF INTERVENTION:</div>
+            <div id="whatifCF" class="whatif-subtext">...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 5: Coach Briefing Card -->
+      <div class="card">
+        <div class="card-title">
+          <span>Tactical Coaching Prescription</span>
+          <span style="font-size: 10px; color: var(--accent-cyan); font-weight: bold;">TRAINING GROUND</span>
+        </div>
+        <div id="coachDirectiveText" style="font-size: 12px; line-height: 1.5; color: #c8d6e5;">
+          Select an episode above to inspect match breakdown sequences.
+        </div>
+        <div id="coachDrillBox" class="coach-drill-box">
+          <div class="drill-title">📋 Corrective Training Drill</div>
+          <div id="coachDrillText" class="drill-desc">...</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Bottom Playback Timeline -->
+  <footer>
+    <div class="playback-controls">
+      <button id="prevBtn" class="ctrl-btn" title="Step Back">⏮</button>
+      <button id="playBtn" class="ctrl-btn play-btn" title="Play/Pause">▶</button>
+      <button id="nextBtn" class="ctrl-btn" title="Step Forward">⏭</button>
+    </div>
+
+    <div class="timeline-track">
+      <div class="timeline-markers">
+        <div id="dominoPin" class="marker-pin pin-domino" style="display: none;">⚠ Domino</div>
+        <div id="threatPin" class="marker-pin pin-threat" style="display: none;">⚽ Shot</div>
+      </div>
+      <input type="range" id="frameSlider" min="0" max="100" value="0">
+    </div>
+
+    <div id="timeDisplay" class="time-display">00:00.00</div>
+  </footer>
+
+  <!-- Full Tactical Dossier Modal -->
+  <div id="dossierModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="dossierModalTitle">What-If Tactical Dossier</div>
+          <div class="modal-sub" id="dossierModalSub">Complete Structural Causal Model (SCM) Breakdown & Counterfactual Debrief</div>
+        </div>
+        <button id="closeDossierBtn" class="modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Section 1: Executive Summary -->
+        <div class="dossier-card">
+          <div class="dossier-sec-title">📌 Executive Causal Briefing</div>
+          <p id="modalExecSummary" class="dossier-body-text"></p>
+        </div>
+
+        <!-- Section 2: Causal Domino Cascade -->
+        <div class="dossier-card">
+          <div class="dossier-sec-title">⛓️ Causal Breakdown Chain (SCM Domino Cascade)</div>
+          <div class="cascade-flow">
+            <div class="cascade-step">
+              <div class="step-num">Step 1: The Trigger</div>
+              <div id="modalCascade1" class="step-desc">Opponent transition creates forward momentum.</div>
+            </div>
+            <div class="cascade-arrow">&rarr;</div>
+            <div class="cascade-step">
+              <div class="step-num">Step 2: The Root Error</div>
+              <div id="modalCascade2" class="step-desc">Defender steps 4.5m out of line.</div>
+            </div>
+            <div class="cascade-arrow">&rarr;</div>
+            <div class="cascade-step">
+              <div class="step-num">Step 3: Domino Rupture</div>
+              <div id="modalCascade3" class="step-desc">7.3m channel opened; offside trap broken.</div>
+            </div>
+            <div class="cascade-arrow">&rarr;</div>
+            <div class="cascade-step step-goal">
+              <div class="step-num">Step 4: Terminal Event</div>
+              <div id="modalCascade4" class="step-desc">Uncontested through-ball & goal conceded.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: The Counterfactual What-If -->
+        <div class="dossier-card dossier-highlight">
+          <div class="dossier-sec-title" style="color: #1dd1a1;">🛡️ Counterfactual What-If: Mathematical & Spatial Proof</div>
+          <div class="cf-proof-grid">
+            <div class="proof-item">
+              <div class="proof-label">Causal Intervention</div>
+              <div id="modalProofAction" class="proof-val">Anchor on 18m line</div>
+            </div>
+            <div class="proof-item">
+              <div class="proof-label">Channel Compression</div>
+              <div id="modalProofChannel" class="proof-val">7.3m &rarr; 3.2m (-4.1m)</div>
+            </div>
+            <div class="proof-item">
+              <div class="proof-label">Offside Outcome</div>
+              <div id="modalProofOffside" class="proof-val">Attacker caught offside</div>
+            </div>
+            <div class="proof-item">
+              <div class="proof-label">Spearman PPCF Threat</div>
+              <div id="modalProofThreat" class="proof-val">-29.0% Dangerous Space</div>
+            </div>
+          </div>
+          <p id="modalProofExplanation" class="dossier-body-text" style="margin-top: 12px;"></p>
+        </div>
+
+        <!-- Section 4: Training Ground Prescription -->
+        <div class="dossier-card">
+          <div class="dossier-sec-title">🎓 Training Ground Prescription & Video Room Debrief</div>
+          <div class="coaching-columns">
+            <div>
+              <div class="coach-heading">Individual Player Directive:</div>
+              <p id="modalCoachPlayer" class="coach-text"></p>
+            </div>
+            <div>
+              <div class="coach-heading">Unit Coordination (Defensive 4-Chain):</div>
+              <p id="modalCoachUnit" class="coach-text"></p>
+            </div>
+            <div>
+              <div class="coach-heading">Prescribed Training Drill:</div>
+              <p id="modalCoachDrill" class="coach-text"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gemini API Key Config Modal -->
+  <div id="geminiModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">✨ Gemini AI Tactical Engine</div>
+          <div class="modal-sub">Powered by Google Gemini 2.5 Flash</div>
+        </div>
+        <button id="closeGeminiModalBtn" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="gap: 14px;">
+        <p style="font-size: 12px; line-height: 1.5; color: #c8d6e5;">
+          Enter your Google Gemini API key to enable dynamic tactical match debriefs, causal breakdowns, and coaching prescriptions directly from optical tracking data.
+        </p>
+        <div>
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted); display: block; margin-bottom: 6px;">GOOGLE GEMINI API KEY</label>
+          <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy..." style="width: 100%; padding: 10px; background: #101a15; border: 1px solid var(--panel-border); border-radius: 6px; color: #fff; font-family: monospace; font-size: 13px; outline: none;">
+          <div id="geminiStatusMsg" style="font-size: 11px; margin-top: 6px; color: var(--text-muted);">
+            Key is stored in your browser's local storage and used directly to communicate with Gemini.
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;">
+          <button id="saveGeminiKeyBtn" style="background: var(--accent-green); color: #000; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 800; cursor: pointer;">Save & Activate</button>
+          <button id="clearGeminiKeyBtn" style="background: transparent; color: #ff6b6b; border: 1px solid #ff6b6b; padding: 8px 14px; border-radius: 6px; font-size: 11px; cursor: pointer;">Clear Key</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/studio.js?v=2.5"></script>
+</body>
+</html>
